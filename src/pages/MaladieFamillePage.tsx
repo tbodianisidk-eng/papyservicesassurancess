@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { DataService } from "@/services/dataService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Users, UserCheck, TrendingUp } from "lucide-react";
+import { Plus, Search, Users, UserCheck, TrendingUp, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const mockFamilles = [
+const initialFamilles = [
   {
     id: 1,
     principal: "Amadou Diallo",
@@ -18,50 +19,36 @@ const mockFamilles = [
     dateFin: "2025-01-14",
     prime: "850000",
     statut: "Actif"
-  },
-  {
-    id: 2,
-    principal: "Mariama Sow",
-    telephone: "+221 76 234 56 78",
-    beneficiaires: ["Ibrahima Sow (Époux)", "Khadija Sow (Fille)"],
-    dateDebut: "2024-02-01",
-    dateFin: "2025-01-31",
-    prime: "650000",
-    statut: "Actif"
-  },
-  {
-    id: 3,
-    principal: "Ousmane Ndiaye",
-    telephone: "+221 78 345 67 89",
-    beneficiaires: ["Awa Ndiaye (Épouse)", "Cheikh Ndiaye (Fils)", "Binta Ndiaye (Fille)", "Mamadou Ndiaye (Fils)"],
-    dateDebut: "2023-06-01",
-    dateFin: "2024-05-31",
-    prime: "1200000",
-    statut: "Expiré"
-  },
-  {
-    id: 4,
-    principal: "Fatou Sarr",
-    telephone: "+221 77 456 78 90",
-    beneficiaires: ["Abdou Sarr (Époux)", "Yacine Sarr (Fils)"],
-    dateDebut: "2024-03-10",
-    dateFin: "2025-03-09",
-    prime: "720000",
-    statut: "Actif"
   }
 ];
 
 export default function MaladieFamillePage() {
   const navigate = useNavigate();
+  const [familles, setFamilles] = useState<any[]>(initialFamilles);
   const [search, setSearch] = useState("");
-  const filtered = mockFamilles.filter(f =>
+
+  useEffect(() => {
+    DataService.getFamilles().then(setFamilles).catch((error) => console.error(error));
+  }, []);
+
+  const onDeleteFamille = async (id: number) => {
+    await DataService.deleteFamille(id);
+    setFamilles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const onEditFamille = (id: number) => {
+    navigate(`/maladie-famille/new?id=${id}`);
+  };
+
+  const filtered = familles.filter((f) =>
     f.principal.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
-    total: mockFamilles.length,
-    actifs: mockFamilles.filter(f => f.statut === "Actif").length,
-    beneficiaires: mockFamilles.reduce((sum, f) => sum + f.beneficiaires.length + 1, 0)
+    total: familles.length,
+    actifs: familles.filter(f => f.statut === "Actif").length,
+    beneficiaires: familles.reduce((sum, f) => sum + (f.beneficiaires?.length || 0) + 1, 0),
+    primeTotale: familles.reduce((sum, f) => sum + Number(f.prime || 0), 0)
   };
 
   return (
@@ -98,6 +85,17 @@ export default function MaladieFamillePage() {
               <div>
                 <p className="text-sm text-muted-foreground">Actifs</p>
                 <p className="text-2xl font-bold">{stats.actifs}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Prime annuelle totale</p>
+                <p className="text-2xl font-bold">{stats.primeTotale.toLocaleString()} FCFA</p>
               </div>
             </div>
           </Card>
@@ -171,6 +169,16 @@ export default function MaladieFamillePage() {
                         <p className="text-xs text-muted-foreground">Date fin</p>
                         <p className="font-semibold">{new Date(famille.dateFin).toLocaleDateString('fr-FR')}</p>
                       </div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button onClick={() => onEditFamille(famille.id)} variant="outline" size="sm">
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Modifier
+                      </Button>
+                      <Button onClick={() => onDeleteFamille(famille.id)} variant="destructive" size="sm">
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Supprimer
+                      </Button>
                     </div>
                   </div>
                 </div>

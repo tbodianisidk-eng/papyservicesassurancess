@@ -6,21 +6,29 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { DataService } from "@/services/dataService";
 
 export default function NewPrestatairePage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     nom: "",
-    specialite: "",
+    type: "",
     telephone: "",
     email: "",
-    adresse: ""
+    adresse: "",
+    numero: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Prestataire créé avec succès !");
-    navigate('/prestataires');
+    try {
+      await DataService.createPrestataire(formData);
+      alert("Prestataire créé avec succès !");
+      navigate('/prestataires');
+    } catch (error) {
+      console.error('Erreur lors de la création:', error);
+      alert("Erreur lors de la création du prestataire");
+    }
   };
 
   return (
@@ -34,6 +42,17 @@ export default function NewPrestatairePage() {
           <Card className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
+                <Label htmlFor="numero">Numéro</Label>
+                <Input
+                  id="numero"
+                  value={formData.numero}
+                  onChange={(e) => setFormData({...formData, numero: e.target.value})}
+                  required
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
                 <Label htmlFor="nom">Nom du prestataire</Label>
                 <Input
                   id="nom"
@@ -45,21 +64,21 @@ export default function NewPrestatairePage() {
               </div>
 
               <div>
-                <Label htmlFor="specialite">Spécialité</Label>
+                <Label htmlFor="type">Type</Label>
                 <select
-                  id="specialite"
-                  value={formData.specialite}
-                  onChange={(e) => setFormData({...formData, specialite: e.target.value})}
+                  id="type"
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
                   className="w-full mt-2 px-3 py-2 border border-input rounded-lg bg-background"
                   required
                 >
-                  <option value="">Sélectionner une spécialité</option>
-                  <option value="Médecin Généraliste">Médecin Généraliste</option>
-                  <option value="Pharmacie">Pharmacie</option>
-                  <option value="Clinique">Clinique</option>
-                  <option value="Gynécologue">Gynécologue</option>
-                  <option value="Laboratoire">Laboratoire</option>
-                  <option value="Ophtalmologue">Ophtalmologue</option>
+                  <option value="">Sélectionner un type</option>
+                  <option value="HOPITAL">Hôpital</option>
+                  <option value="PHARMACIE">Pharmacie</option>
+                  <option value="CLINIQUE">Clinique</option>
+                  <option value="CABINET_MEDICAL">Cabinet Médical</option>
+                  <option value="LABORATOIRE">Laboratoire</option>
+                  <option value="AUTRE">Autre</option>
                 </select>
               </div>
 

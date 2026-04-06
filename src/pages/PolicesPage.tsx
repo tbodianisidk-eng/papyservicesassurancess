@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Search, Filter, Eye, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { mockPolices } from "@/data/mockData";
+import { DataService } from "@/services/dataService";
 
 const statusStyles: Record<string, string> = {
   Active: "bg-success/10 text-success border-success/20",
@@ -14,7 +14,21 @@ const statusStyles: Record<string, string> = {
 export default function PolicesPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const filtered = mockPolices.filter(
+  const [polices, setPolices] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadPolices = async () => {
+      try {
+        const list = await DataService.getPolices();
+        setPolices(list);
+      } catch (error) {
+        console.error('PolicesPage: impossible de charger les polices', error);
+      }
+    };
+    loadPolices();
+  }, []);
+
+  const filtered = polices.filter(
     (p) =>
       p.numero.toLowerCase().includes(search.toLowerCase()) ||
       p.assurePrincipal.toLowerCase().includes(search.toLowerCase())

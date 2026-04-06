@@ -1,5 +1,5 @@
-// API Client for backend communication
-class ApiClient {
+// API Client - connecté au backend Spring Boot sur http://localhost:3001/api
+export class ApiClient {
   private baseURL: string;
   private timeout: number;
 
@@ -8,58 +8,49 @@ class ApiClient {
     this.timeout = parseInt(import.meta.env.VITE_API_TIMEOUT || '10000');
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('auth_token');
 
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
       ...options,
     };
 
-    // Add authorization header if token exists
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        'Authorization': `Bearer ${token}`,
-      };
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      const response = await fetch(url, {
-        ...config,
-        signal: controller.signal,
-      });
-
+      const response = await fetch(url, { ...config, signal: controller.signal });
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        const errorData = await response.json().catch(() => ({ message: 'Erreur réseau' }));
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
-      return await response.json();
+      const json = await response.json();
+      // Le backend Spring Boot retourne { success, data, message }
+      // On extrait data si présent, sinon on retourne le JSON brut
+      return (json && json.success !== undefined ? json.data : json) as T;
     } catch (error) {
+      clearTimeout(timeoutId);
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error('Request timeout');
+        if (error.name === 'AbortError') throw new Error('Délai de connexion dépassé');
+        if (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+          throw new Error('Failed to fetch');
         }
         throw error;
       }
-      throw new Error('Unknown error occurred');
+      throw new Error('Erreur inconnue');
     }
   }
 
-  // Authentication methods
+  // Auth
   async login(credentials: { email: string; password: string }) {
     return this.request<{ user: any; token: string }>('/auth/login', {
       method: 'POST',
@@ -67,13 +58,7 @@ class ApiClient {
     });
   }
 
-  async register(userData: {
-    email: string;
-    password: string;
-    fullName: string;
-    role: string;
-    organization?: string;
-  }) {
+  async register(userData: { email: string; password: string; fullName: string; role: string; organization?: string }) {
     return this.request<{ user: any; token: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -81,56 +66,45 @@ class ApiClient {
   }
 
   async logout() {
-    return this.request('/auth/logout', {
-      method: 'POST',
-    });
+    return this.request('/auth/logout', { method: 'POST' }).catch(() => ({}));
   }
 
   async getCurrentUser() {
     return this.request<{ user: any }>('/auth/me');
   }
 
-  // User management
+  // Users
   async getUsers() {
     return this.request<{ users: any[] }>('/users');
   }
 
   async updateUser(id: string, userData: any) {
-    return this.request(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    });
+    return this.request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) });
   }
 
   async deleteUser(id: string) {
-    return this.request(`/users/${id}`, {
-      method: 'DELETE',
-    });
+    return this.request(`/users/${id}`, { method: 'DELETE' });
   }
 
-  // Assures
+  // Assurés
   async getAssures() {
     return this.request<{ assures: any[] }>('/assures');
   }
 
-  async createAssure(assureData: any) {
-    return this.request('/assures', {
-      method: 'POST',
-      body: JSON.stringify(assureData),
-    });
+  async getAssureById(id: string) {
+    return this.request<any>(`/assures/${id}`);
   }
 
-  async updateAssure(id: string, assureData: any) {
-    return this.request(`/assures/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(assureData),
-    });
+  async createAssure(data: any) {
+    return this.request('/assures', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateAssure(id: string, data: any) {
+    return this.request(`/assures/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   }
 
   async deleteAssure(id: string) {
-    return this.request(`/assures/${id}`, {
-      method: 'DELETE',
-    });
+    return this.request(`/assures/${id}`, { method: 'DELETE' });
   }
 
   // Polices
@@ -138,11 +112,8 @@ class ApiClient {
     return this.request<{ polices: any[] }>('/polices');
   }
 
-  async createPolice(policeData: any) {
-    return this.request('/polices', {
-      method: 'POST',
-      body: JSON.stringify(policeData),
-    });
+  async createPolice(data: any) {
+    return this.request('/polices', { method: 'POST', body: JSON.stringify(data) });
   }
 
   // Sinistres
@@ -150,11 +121,12 @@ class ApiClient {
     return this.request<{ sinistres: any[] }>('/sinistres');
   }
 
-  async createSinistre(sinistreData: any) {
-    return this.request('/sinistres', {
-      method: 'POST',
-      body: JSON.stringify(sinistreData),
-    });
+  async getSinistreById(id: string) {
+    return this.request<any>(`/sinistres/${id}`);
+  }
+
+  async createSinistre(data: any) {
+    return this.request('/sinistres', { method: 'POST', body: JSON.stringify(data) });
   }
 
   // Prestataires
@@ -162,11 +134,8 @@ class ApiClient {
     return this.request<{ prestataires: any[] }>('/prestataires');
   }
 
-  async createPrestataire(prestataireData: any) {
-    return this.request('/prestataires', {
-      method: 'POST',
-      body: JSON.stringify(prestataireData),
-    });
+  async createPrestataire(data: any) {
+    return this.request('/prestataires', { method: 'POST', body: JSON.stringify(data) });
   }
 
   // Consultations
@@ -174,11 +143,8 @@ class ApiClient {
     return this.request<{ consultations: any[] }>('/consultations');
   }
 
-  async createConsultation(consultationData: any) {
-    return this.request('/consultations', {
-      method: 'POST',
-      body: JSON.stringify(consultationData),
-    });
+  async createConsultation(data: any) {
+    return this.request('/consultations', { method: 'POST', body: JSON.stringify(data) });
   }
 
   // Prescriptions
@@ -186,11 +152,8 @@ class ApiClient {
     return this.request<{ prescriptions: any[] }>('/prescriptions');
   }
 
-  async createPrescription(prescriptionData: any) {
-    return this.request('/prescriptions', {
-      method: 'POST',
-      body: JSON.stringify(prescriptionData),
-    });
+  async createPrescription(data: any) {
+    return this.request('/prescriptions', { method: 'POST', body: JSON.stringify(data) });
   }
 }
 

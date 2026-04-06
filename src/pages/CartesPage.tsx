@@ -1,14 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Download, QrCode, CreditCard, User } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockAssures } from "@/data/mockData";
+import { DataService } from "@/services/dataService";
 
 export default function CartesPage() {
   const [search, setSearch] = useState("");
-  const filtered = mockAssures.filter(
+  const [assures, setAssures] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadAssures = async () => {
+      try {
+        const list = await DataService.getAssures();
+        setAssures(list);
+      } catch (error) {
+        console.error('CartesPage: impossible de charger les assurés', error);
+      }
+    };
+    loadAssures();
+  }, []);
+
+  const filtered = assures.filter(
     (a) =>
       a.nom.toLowerCase().includes(search.toLowerCase()) ||
       a.prenom.toLowerCase().includes(search.toLowerCase()) ||
@@ -65,7 +79,7 @@ export default function CartesPage() {
 
     // Titre principal
     ctx.font = 'bold 48px Arial';
-    ctx.fillText('SantéAssur', 60, 170);
+    ctx.fillText('Papy Services Assurances', 60, 170);
     ctx.font = '22px Arial';
     ctx.globalAlpha = 0.9;
     ctx.fillText('CARTE D\'ASSURANCE SANTÉ', 60, 200);
@@ -182,7 +196,7 @@ export default function CartesPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <p className="text-xs opacity-80">ASSURANCE SANTÉ</p>
-                      <p className="text-lg font-bold mt-1">SantéAssur</p>
+                      <p className="text-lg font-bold mt-1">Papy Services</p>
                     </div>
                     <CreditCard className="w-8 h-8 opacity-80" />
                   </div>

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -30,6 +31,7 @@ import NewGroupePage from "./pages/NewGroupePage";
 import MaladieFamillePage from "./pages/MaladieFamillePage";
 import NewFamillePage from "./pages/NewFamillePage";
 import AdminProfilePage from "./pages/AdminProfilePage";
+import UsersPage from "./pages/UsersPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -46,33 +48,41 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/registrations" element={<RegistrationManagementPage />} />
-          <Route path="/assures" element={<AssuresPage />} />
-          <Route path="/assures/new" element={<NewAssurePage />} />
-          <Route path="/assures/:id" element={<AssureDetailsPage />} />
-          <Route path="/polices" element={<PolicesPage />} />
-          <Route path="/polices/new" element={<NewPolicePage />} />
-          <Route path="/maladie-famille" element={<MaladieFamillePage />} />
-          <Route path="/maladie-famille/new" element={<NewFamillePage />} />
-          <Route path="/maladie-groupe" element={<MaladieGroupePage />} />
-          <Route path="/maladie-groupe/new" element={<NewGroupePage />} />
-          <Route path="/sinistres" element={<SinistresPage />} />
-          <Route path="/sinistres/:id" element={<SinistreDetailsPage />} />
-          <Route path="/remboursements" element={<RemboursementsPage />} />
-          <Route path="/prestataires" element={<PrestatairesPage />} />
-          <Route path="/prestataires/new" element={<NewPrestatairePage />} />
-          <Route path="/cartes" element={<CartesPage />} />
-          <Route path="/consultations" element={<ConsultationsPage />} />
-          <Route path="/consultations/new" element={<NewConsultationPage />} />
-          <Route path="/prescriptions" element={<PrescriptionsPage />} />
-          <Route path="/prescriptions/new" element={<NewPrescriptionPage />} />
-          <Route path="/prescriptions/:id" element={<PrescriptionDetailsPage />} />
-          <Route path="/profile" element={<AdminProfilePage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+
+            {/* Routes accessibles à tous les utilisateurs connectés */}
+            <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+            <Route path="/profile" element={<ProtectedRoute element={<AdminProfilePage />} />} />
+            <Route path="/polices" element={<ProtectedRoute element={<PolicesPage />} />} />
+            <Route path="/sinistres" element={<ProtectedRoute element={<SinistresPage />} />} />
+            <Route path="/sinistres/:id" element={<ProtectedRoute element={<SinistreDetailsPage />} />} />
+            <Route path="/remboursements" element={<ProtectedRoute element={<RemboursementsPage />} />} />
+            <Route path="/cartes" element={<ProtectedRoute element={<CartesPage />} />} />
+            <Route path="/prescriptions" element={<ProtectedRoute element={<PrescriptionsPage />} />} />
+            <Route path="/prescriptions/:id" element={<ProtectedRoute element={<PrescriptionDetailsPage />} />} />
+
+            {/* Routes admin uniquement */}
+            <Route path="/users" element={<ProtectedRoute element={<UsersPage />} requiredRoles={['admin']} />} />
+            <Route path="/registrations" element={<ProtectedRoute element={<RegistrationManagementPage />} requiredRoles={['admin']} />} />
+            <Route path="/assures" element={<ProtectedRoute element={<AssuresPage />} requiredRoles={['admin']} />} />
+            <Route path="/assures/new" element={<ProtectedRoute element={<NewAssurePage />} requiredRoles={['admin']} />} />
+            <Route path="/assures/:id" element={<ProtectedRoute element={<AssureDetailsPage />} requiredRoles={['admin']} />} />
+            <Route path="/polices/new" element={<ProtectedRoute element={<NewPolicePage />} requiredRoles={['admin']} />} />
+            <Route path="/maladie-famille" element={<ProtectedRoute element={<MaladieFamillePage />} requiredRoles={['admin']} />} />
+            <Route path="/maladie-famille/new" element={<ProtectedRoute element={<NewFamillePage />} requiredRoles={['admin']} />} />
+            <Route path="/maladie-groupe" element={<ProtectedRoute element={<MaladieGroupePage />} requiredRoles={['admin']} />} />
+            <Route path="/maladie-groupe/new" element={<ProtectedRoute element={<NewGroupePage />} requiredRoles={['admin']} />} />
+            <Route path="/prestataires" element={<ProtectedRoute element={<PrestatairesPage />} requiredRoles={['admin']} />} />
+            <Route path="/prestataires/new" element={<ProtectedRoute element={<NewPrestatairePage />} requiredRoles={['admin']} />} />
+
+            {/* Routes admin + prestataire */}
+            <Route path="/consultations" element={<ProtectedRoute element={<ConsultationsPage />} requiredRoles={['admin', 'prestataire']} />} />
+            <Route path="/consultations/new" element={<ProtectedRoute element={<NewConsultationPage />} requiredRoles={['admin', 'prestataire']} />} />
+            <Route path="/prescriptions/new" element={<ProtectedRoute element={<NewPrescriptionPage />} requiredRoles={['admin', 'prestataire']} />} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { DataService } from "@/services/dataService";
 
 export default function NewGroupePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     entreprise: "",
     secteur: "",
@@ -19,10 +22,58 @@ export default function NewGroupePage() {
     prime: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const idParam = Number(searchParams.get('id'));
+    if (idParam) {
+      setEditingId(idParam);
+      DataService.getGroupeById(idParam)
+        .then((groupe) => {
+          if (groupe) {
+            setFormData({
+              entreprise: groupe.entreprise || "",
+              secteur: groupe.secteur || "",
+              employes: groupe.employes?.toString() || "",
+              dateDebut: groupe.debut || "",
+              dateFin: groupe.fin || "",
+              prime: groupe.prime || ""
+            });
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          toast.error("Erreur lors du chargement du groupe à modifier");
+        });
+    }
+  }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Groupe créé avec succès");
-    navigate("/maladie-groupe");
+    try {
+      if (editingId) {
+        await DataService.updateGroupe(editingId, {
+          entreprise: formData.entreprise,
+          secteur: formData.secteur,
+          employes: Number(formData.employes),
+          debut: formData.dateDebut,
+          fin: formData.dateFin,
+          prime: formData.prime,
+        });
+        toast.success("Groupe modifié avec succès");
+      } else {
+        await DataService.createGroupe({
+          entreprise: formData.entreprise,
+          secteur: formData.secteur,
+          employes: Number(formData.employes),
+          debut: formData.dateDebut,
+          fin: formData.dateFin,
+          prime: formData.prime,
+        });
+        toast.success("Groupe créé avec succès");
+      }
+      navigate("/maladie-groupe");
+    } catch (error: any) {
+      toast.error(error?.message || `Erreur lors de la ${editingId ? "modification" : "création"} du groupe`);
+    }
   };
 
   return (
@@ -34,7 +85,7 @@ export default function NewGroupePage() {
         </Button>
 
         <Card className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Nouveau Groupe</h2>
+          <h2 className="text-2xl font-bold mb-6">{editingId ? 'Modifier le Groupe' : 'Nouveau Groupe'}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label>Entreprise</Label>
@@ -100,7 +151,7 @@ export default function NewGroupePage() {
             </div>
 
             <Button type="submit" className="w-full btn-ripple bg-gradient-to-r from-blue-600 to-purple-600">
-              Créer le groupe
+              {editingId ? 'Modifier le groupe' : 'Créer le groupe'}
             </Button>
           </form>
         </Card>

@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { DataService } from "@/services/dataService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, Users, TrendingUp } from "lucide-react";
+import { Plus, Search, Building2, Users, TrendingUp, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const mockGroupes = [
+const initialGroupes = [
   {
     id: 1,
     entreprise: "Sonatel SA",
@@ -19,37 +20,37 @@ const mockGroupes = [
     fin: "2024-12-31",
     prime: "45000000",
     statut: "Actif"
-  },
-  {
-    id: 2,
-    entreprise: "Banque Atlantique",
-    secteur: "Finance",
-    employes: 280,
-    assures: 840,
-    debut: "2024-03-01",
-    fin: "2025-02-28",
-    prime: "28000000",
-    statut: "Actif"
-  },
-  {
-    id: 3,
-    entreprise: "Sénégalaise de l'Automobile",
-    secteur: "Automobile",
-    employes: 120,
-    assures: 360,
-    debut: "2023-06-01",
-    fin: "2024-05-31",
-    prime: "12000000",
-    statut: "Expiré"
   }
 ];
 
 export default function MaladieGroupePage() {
   const navigate = useNavigate();
+  const [groupes, setGroupes] = useState<any[]>(initialGroupes);
   const [search, setSearch] = useState("");
-  const filtered = mockGroupes.filter(g =>
+
+  useEffect(() => {
+    DataService.getGroupes().then(setGroupes).catch((error) => console.error(error));
+  }, []);
+
+  const onDeleteGroupe = async (id: number) => {
+    await DataService.deleteGroupe(id);
+    setGroupes((prev) => prev.filter((g) => g.id !== id));
+  };
+
+  const onEditGroupe = (id: number) => {
+    navigate(`/maladie-groupe/new?id=${id}`);
+  };
+
+  const filtered = groupes.filter((g) =>
     g.entreprise.toLowerCase().includes(search.toLowerCase())
   );
+
+  const stats = {
+    total: groupes.length,
+    actifs: groupes.filter(g => g.statut === "Actif").length,
+    totAssures: groupes.reduce((sum, g) => sum + Number(g.assures || 0), 0),
+    primeTotale: groupes.reduce((sum, g) => sum + Number(g.prime || 0), 0)
+  };
 
   return (
     <AppLayout>
@@ -65,7 +66,7 @@ export default function MaladieGroupePage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
@@ -73,7 +74,7 @@ export default function MaladieGroupePage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Entreprises</p>
-                <p className="text-2xl font-bold">{mockGroupes.length}</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
           </Card>
@@ -84,7 +85,7 @@ export default function MaladieGroupePage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Actifs</p>
-                <p className="text-2xl font-bold">{mockGroupes.filter(g => g.statut === "Actif").length}</p>
+                <p className="text-2xl font-bold">{stats.actifs}</p>
               </div>
             </div>
           </Card>
@@ -95,7 +96,18 @@ export default function MaladieGroupePage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Assurés</p>
-                <p className="text-2xl font-bold">{mockGroupes.reduce((sum, g) => sum + g.assures, 0)}</p>
+                <p className="text-2xl font-bold">{stats.totAssures}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Prime annuelle totale</p>
+                <p className="text-2xl font-bold">{stats.primeTotale.toLocaleString()} FCFA</p>
               </div>
             </div>
           </Card>
@@ -149,6 +161,16 @@ export default function MaladieGroupePage() {
                         <p className="text-xs text-muted-foreground">Période</p>
                         <p className="font-semibold text-sm">{new Date(groupe.debut).getFullYear()}</p>
                       </div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button onClick={() => onEditGroupe(groupe.id)} variant="outline" size="sm">
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Modifier
+                      </Button>
+                      <Button onClick={() => onDeleteGroupe(groupe.id)} variant="destructive" size="sm">
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Supprimer
+                      </Button>
                     </div>
                   </div>
                 </div>

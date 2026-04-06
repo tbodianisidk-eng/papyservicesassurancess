@@ -86,11 +86,12 @@ export default function AssuresPage() {
 
         {/* Table */}
         {!loading && !error && (
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-xl shadow-card border border-border overflow-hidden"
-        >
-          <div className="overflow-x-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-xl shadow-card border border-border overflow-hidden"
+          >
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
@@ -141,8 +142,8 @@ export default function AssuresPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-        </motion.div>
+            </div>
+          </motion.div>
         )}
       </div>
     </AppLayout>

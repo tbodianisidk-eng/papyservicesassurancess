@@ -3,15 +3,42 @@ import { ArrowLeft, User, Calendar, FileText, Banknote } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { mockSinistres } from "@/data/mockData";
+import { DataService } from "@/services/dataService";
+import { useState, useEffect } from "react";
 
 export default function SinistreDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const sinistre = mockSinistres.find(s => s.id === id);
+  const [sinistre, setSinistre] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string|null>(null);
 
-  if (!sinistre) {
-    return <AppLayout title="Sinistre introuvable"><p>Sinistre non trouvé</p></AppLayout>;
+  useEffect(() => {
+    const loadSinistre = async () => {
+      if (!id) {
+        setError('ID invalide');
+        setLoading(false);
+        return;
+      }
+      try {
+        const fetched = await DataService.getSinistreById(id);
+        setSinistre(fetched);
+      } catch (err) {
+        console.error('SinistreDetailsPage: impossible de charger le sinistre', err);
+        setError('Erreur lors du chargement du sinistre');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSinistre();
+  }, [id]);
+
+  if (loading) {
+    return <AppLayout title="Chargement...">Chargement en cours...</AppLayout>;
+  }
+
+  if (error || !sinistre) {
+    return <AppLayout title="Sinistre introuvable"><p>{error ?? 'Sinistre non trouvé'}</p></AppLayout>;
   }
 
   return (

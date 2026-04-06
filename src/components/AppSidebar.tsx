@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, Users, Shield, FileText, Building2, CreditCard,
-  Stethoscope, Pill, ClipboardList, Receipt, ChevronDown, ChevronRight,
-  Menu, X, Heart, LogOut
+  LayoutDashboard, Users, Shield, FileText, CreditCard,
+  Stethoscope, Pill, ClipboardList, ChevronDown, ChevronRight,
+  Menu, X, LogOut, Banknote
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface NavItem {
   label: string;
@@ -14,8 +15,8 @@ interface NavItem {
   children?: { label: string; path: string }[];
 }
 
-const navItems: NavItem[] = [
-  { label: "Tableau de bord", icon: <LayoutDashboard size={20} />, path: "/" },
+const adminNavItems: NavItem[] = [
+  { label: "Tableau de bord", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
   {
     label: "Production",
     icon: <Shield size={20} />,
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Assurés", icon: <Users size={20} />, path: "/assures" },
+  { label: "Utilisateurs", icon: <Users size={20} />, path: "/users" },
   { label: "Prestataires", icon: <Stethoscope size={20} />, path: "/prestataires" },
   {
     label: "Sinistres",
@@ -40,12 +42,52 @@ const navItems: NavItem[] = [
   { label: "Prescriptions", icon: <Pill size={20} />, path: "/prescriptions" },
 ];
 
+const prestataireNavItems: NavItem[] = [
+  { label: "Tableau de bord", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
+  { label: "Consultations", icon: <ClipboardList size={20} />, path: "/consultations" },
+  { label: "Prescriptions", icon: <Pill size={20} />, path: "/prescriptions" },
+  {
+    label: "Sinistres",
+    icon: <FileText size={20} />,
+    children: [
+      { label: "Liste sinistres", path: "/sinistres" },
+      { label: "Remboursements", path: "/remboursements" },
+    ],
+  },
+];
+
+const clientNavItems: NavItem[] = [
+  { label: "Tableau de bord", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
+  { label: "Mes Polices", icon: <Shield size={20} />, path: "/polices" },
+  { label: "Mes Sinistres", icon: <FileText size={20} />, path: "/sinistres" },
+  { label: "Remboursements", icon: <Banknote size={20} />, path: "/remboursements" },
+  { label: "Ma Carte", icon: <CreditCard size={20} />, path: "/cartes" },
+  { label: "Mes Prescriptions", icon: <Pill size={20} />, path: "/prescriptions" },
+];
+
 export default function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>(["Production", "Sinistres"]);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navItems = user?.role === 'prestataire' ? prestataireNavItems
+    : user?.role === 'client' ? clientNavItems
+    : adminNavItems;
+
+  const roleLabel = user?.role === 'admin' ? 'Administrateur'
+    : user?.role === 'prestataire' ? 'Prestataire'
+    : 'Client';
+
+  const initials = (user?.full_name || user?.email || 'U')
+    .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) =>
@@ -64,13 +106,13 @@ export default function AppSidebar() {
         onClick={() => navigate("/")} 
         className="flex items-center gap-3 px-5 py-6 border-b border-sidebar-border hover:bg-sidebar-accent transition-colors w-full text-left"
       >
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-          <Heart size={18} className="text-white" />
+        <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center">
+          <img src="/logo1.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
         {!collapsed && (
           <div>
-            <h1 className="font-display text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SantéAssur</h1>
-            <p className="text-[10px] text-sidebar-muted">Gestion Assurance Maladie</p>
+            <h1 className="font-display text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Papy Services</h1>
+            <p className="text-[10px] text-sidebar-muted">Assurances</p>
           </div>
         )}
       </button>
@@ -151,15 +193,15 @@ export default function AppSidebar() {
             className="w-full flex items-center gap-3 mb-3 hover:bg-sidebar-accent rounded-lg p-2 transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xs font-semibold text-white">
-              AD
+              {initials}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-xs font-medium text-sidebar-foreground truncate">Admin</p>
-              <p className="text-[10px] text-sidebar-muted truncate">admin@santeassur.sn</p>
+              <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.full_name || 'Utilisateur'}</p>
+              <p className="text-[10px] text-sidebar-muted truncate">{roleLabel}</p>
             </div>
           </button>
           <button
-            onClick={() => navigate("/")}
+            onClick={handleSignOut}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut size={16} />

@@ -1,26 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Search, MapPin, Phone, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { mockPrestataires } from "@/data/mockData";
+import { DataService } from "@/services/dataService";
 
-const specialiteColors: Record<string, string> = {
-  "Médecin Généraliste": "bg-primary/10 text-primary",
-  Pharmacie: "bg-success/10 text-success",
-  Clinique: "bg-info/10 text-info",
-  Gynécologue: "bg-secondary/10 text-secondary-foreground",
-  Laboratoire: "bg-warning/10 text-warning",
-  Ophtalmologue: "bg-accent/10 text-accent-foreground",
+const typeColors: Record<string, string> = {
+  "HOPITAL": "bg-primary/10 text-primary",
+  "PHARMACIE": "bg-success/10 text-success",
+  "CLINIQUE": "bg-info/10 text-info",
+  "CABINET_MEDICAL": "bg-secondary/10 text-secondary-foreground",
+  "LABORATOIRE": "bg-warning/10 text-warning",
+  "AUTRE": "bg-accent/10 text-accent-foreground",
 };
 
 export default function PrestatairesPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const filtered = mockPrestataires.filter(
-    (p) =>
+  const [prestataires, setPrestataires] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrestataires = async () => {
+      try {
+        const data = await DataService.getPrestataires();
+        setPrestataires(data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des prestataires:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPrestataires();
+  }, []);
+
+  const filtered = prestataires.filter(
+    (p: any) =>
       p.nom.toLowerCase().includes(search.toLowerCase()) ||
-      p.specialite.toLowerCase().includes(search.toLowerCase())
+      p.type.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -45,7 +62,12 @@ export default function PrestatairesPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((prest, i) => (
+          {loading ? (
+            <div className="col-span-full text-center py-8">Chargement des prestataires...</div>
+          ) : filtered.length === 0 ? (
+            <div className="col-span-full text-center py-8 text-muted-foreground">Aucun prestataire trouvé</div>
+          ) : (
+            filtered.map((prest, i) => (
             <motion.div
               key={prest.id}
               initial={{ opacity: 0, y: 12 }}
@@ -60,8 +82,8 @@ export default function PrestatairesPage() {
                   </div>
                   <div>
                     <p className="font-medium text-sm">{prest.nom}</p>
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full mt-0.5 font-medium ${specialiteColors[prest.specialite] || "bg-muted text-muted-foreground"}`}>
-                      {prest.specialite}
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full mt-0.5 font-medium ${typeColors[prest.type] || "bg-muted text-muted-foreground"}`}>
+                      {prest.type}
                     </span>
                   </div>
                 </div>
@@ -82,7 +104,8 @@ export default function PrestatairesPage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+          ))
+          )}
         </div>
       </div>
     </AppLayout>

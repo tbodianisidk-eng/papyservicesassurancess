@@ -1,73 +1,67 @@
-# Welcome to your Lovable project
+# Assurance Santé Connect
 
-## Project info
+Plateforme complète de gestion d'assurance santé avec backend Spring Boot et frontend React.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Démarrage Rapide
 
-## How can I edit this code?
+### Backend + Frontend
+```bash
+# Installation des dépendances
+npm install
+cd backend && mvn clean install
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Démarrage (avec H2 par défaut)
+cd backend && mvn spring-boot:run
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Avec Base de Données Persistante
+```bash
+# MySQL
+mvn spring-boot:run -Dspring-boot.run.profiles=mysql
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# PostgreSQL
+mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+```
 
-**Use GitHub Codespaces**
+## 🗄️ Configuration Base de Données
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+L'application supporte 3 bases de données :
 
-## What technologies are used for this project?
+| Base de Données | Profil | Persistance | Production |
+|---|---|---|---|
+| **H2** | `h2` (défaut) | Mémoire | ❌ Non |
+| **MySQL** | `mysql` | Disque | ✅ Oui |
+| **PostgreSQL** | `postgres` | Disque | ✅ Oui |
 
-This project is built with:
+### Installation des Bases de Données
+```bash
+# Script automatique (Windows)
+.\setup-database.ps1
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+📖 **Guide complet** : [DATABASE_SETUP.md](DATABASE_SETUP.md)
 
-## How can I deploy this project?
+## 🔐 Comptes Admin
+- `bassniang7@yahoo.fr` / `admin1`
+- `bodianm372@gmail.com` / `admin1`
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🛠️ Technologies
+- **Backend** : Spring Boot 3.2, Java 21
+- **Frontend** : React 18, TypeScript, Vite
+- **Base de données** : H2/MySQL/PostgreSQL
+- **Sécurité** : JWT, Spring Security
+- **UI** : Tailwind CSS, shadcn/ui
 
-## Can I connect a custom domain to my Lovable project?
+## 📱 Fonctionnalités
+- ✅ Gestion des assurés
+- ✅ Gestion des polices d'assurance
+- ✅ Gestion des consultations médicales
+- ✅ Système de prescriptions
+- ✅ Gestion des sinistres
+- ✅ Notifications par email
+- ✅ Interface responsive
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📞 Contact
+- Téléphone : +221 77 527 97 27
+- Email : bassniang7@yahoo.fr

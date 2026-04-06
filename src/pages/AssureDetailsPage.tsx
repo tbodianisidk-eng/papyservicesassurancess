@@ -3,20 +3,47 @@ import { ArrowLeft, Phone, Mail, MapPin, Shield, Edit, Trash2 } from "lucide-rea
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { mockAssures } from "@/data/mockData";
-import { useState } from "react";
+import { DataService } from "@/services/dataService";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function AssureDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const assure = mockAssures.find(a => a.id === id);
+  const [assure, setAssure] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string|null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(assure || {});
+  const [formData, setFormData] = useState<any>({});
 
-  if (!assure) {
-    return <AppLayout title="Assuré introuvable"><p>Assuré non trouvé</p></AppLayout>;
+  useEffect(() => {
+    const loadAssure = async () => {
+      if (!id) {
+        setError('ID invalide');
+        setLoading(false);
+        return;
+      }
+      try {
+        const found = await DataService.getAssureById(id);
+        setAssure(found);
+        setFormData(found);
+      } catch (err) {
+        console.error('AssureDetailsPage: impossible de charger l’assuré', err);
+        setError('Erreur lors du chargement de l’assuré');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAssure();
+  }, [id]);
+
+  if (loading) {
+    return <AppLayout title="Chargement...">Chargement en cours...</AppLayout>;
+  }
+
+  if (error || !assure) {
+    return <AppLayout title="Assuré introuvable"><p>{error ?? 'Assuré non trouvé'}</p></AppLayout>;
   }
 
   const handleUpdate = () => {
@@ -100,7 +127,7 @@ export default function AssureDetailsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>Paris, France</span>
+                <span>{assure.adresse || 'Dakar, Sénégal'}</span>
               </div>
             </div>
           </Card>

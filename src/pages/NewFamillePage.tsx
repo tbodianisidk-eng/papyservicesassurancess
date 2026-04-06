@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { DataService } from "@/services/dataService";
 
 export default function NewFamillePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     principal: "",
     telephone: "",
@@ -33,10 +36,64 @@ export default function NewFamillePage() {
     setBeneficiaires(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const idParam = Number(searchParams.get('id'));
+    if (idParam) {
+      setEditingId(idParam);
+      DataService.getFamilleById(idParam)
+        .then((famille) => {
+          if (famille) {
+            setFormData({
+              principal: famille.principal || "",
+              telephone: famille.telephone || "",
+              dateDebut: famille.dateDebut || "",
+              dateFin: famille.dateFin || "",
+              prime: famille.prime || ""
+            });
+            setBeneficiaires(
+              (famille.beneficiaires || []).map((b: string) => {
+                const match = b.match(/^(.+) \((.+)\)$/);
+                if (match) return { nom: match[1], lien: match[2] };
+                return { nom: b, lien: "" };
+              })
+            );
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          toast.error("Erreur lors du chargement de la famille à modifier");
+        });
+    }
+  }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Famille créée avec succès");
-    navigate("/maladie-famille");
+    try {
+      if (editingId) {
+        await DataService.updateFamille(editingId, {
+          principal: formData.principal,
+          telephone: formData.telephone,
+          beneficiaires: beneficiaires.map((b) => `${b.nom} (${b.lien})`),
+          dateDebut: formData.dateDebut,
+          dateFin: formData.dateFin,
+          prime: formData.prime,
+        });
+        toast.success("Famille modifiée avec succès");
+      } else {
+        await DataService.createFamille({
+          principal: formData.principal,
+          telephone: formData.telephone,
+          beneficiaires: beneficiaires.map((b) => `${b.nom} (${b.lien})`),
+          dateDebut: formData.dateDebut,
+          dateFin: formData.dateFin,
+          prime: formData.prime,
+        });
+        toast.success("Famille créée avec succès");
+      }
+      navigate("/maladie-famille");
+    } catch (error: any) {
+      toast.error(error?.message || `Erreur lors de la ${editingId ? "modification" : "création"} de la famille`);
+    }
   };
 
   return (
@@ -48,7 +105,7 @@ export default function NewFamillePage() {
         </Button>
 
         <Card className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Nouvelle Famille</h2>
+          <h2 className="text-2xl font-bold mb-6">{editingId ? 'Modifier la Famille' : 'Nouvelle Famille'}</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Assuré Principal</h3>
@@ -136,7 +193,7 @@ export default function NewFamillePage() {
             </div>
 
             <Button type="submit" className="w-full btn-ripple bg-gradient-to-r from-blue-600 to-purple-600">
-              Créer la famille
+              {editingId ? 'Modifier la famille' : 'Créer la famille'}
             </Button>
           </form>
         </Card>

@@ -1,5 +1,35 @@
 import { Assure, Beneficiaire, Police, Prestataire, Sinistre, Consultation, Prescription, StatCard } from "@/types/insurance";
 
+export const senegalCities = [
+  'Dakar',
+  'Thiès',
+  'Saint-Louis',
+  'Ziguinchor',
+  'Kaolack',
+  'Mbour',
+  'Diourbel',
+  'Tambacounda',
+  'Louga',
+  'Fatick',
+  'Kolda',
+  'Matam',
+  'Saint-Louis',
+  'Sédhiou',
+  'Kédougou'
+];
+
+export const defaultCity = 'Dakar';
+
+const makeSenegalAddress = (city: string, neighborhood: string) => `${city}, ${neighborhood}`;
+
+const currentYear = new Date().getFullYear();
+
+const yearTag = (prefix: string, index: number) => `${prefix}-${currentYear}-${String(index).padStart(3, '0')}`;
+
+const ymd = (year: number, month: number, day: number) => `${year.toString().padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+const nextYear = currentYear + 1;
+
 export const mockStats: StatCard[] = [
   { title: "Assurés actifs", value: "2,847", change: "+12%", trend: "up", icon: "users" },
   { title: "Polices en cours", value: "1,234", change: "+8%", trend: "up", icon: "shield" },
@@ -8,19 +38,19 @@ export const mockStats: StatCard[] = [
 ];
 
 export const mockAssures: Assure[] = [
-  { id: "ASS-001", numero: "ASS-2024-001", nom: "Diop", prenom: "Moussa", dateNaissance: "1985-03-15", sexe: "M", telephone: "+221 77 123 45 67", adresse: "Dakar, Plateau", email: "moussa.diop@email.com", pieceIdentite: "SN-1234567", profession: "Ingénieur", dateSouscription: "2024-01-15", dateDebut: "2024-02-01", dateFin: "2025-01-31", statut: "Actif", type: "famille" },
-  { id: "ASS-002", numero: "ASS-2024-002", nom: "Fall", prenom: "Aminata", dateNaissance: "1990-07-22", sexe: "F", telephone: "+221 78 234 56 78", adresse: "Dakar, Almadies", email: "aminata.fall@email.com", pieceIdentite: "SN-2345678", profession: "Médecin", dateSouscription: "2024-02-10", dateDebut: "2024-03-01", dateFin: "2025-02-28", statut: "Actif", type: "famille" },
-  { id: "ASS-003", numero: "ASS-2024-003", nom: "Ndiaye", prenom: "Ibrahima", dateNaissance: "1978-11-08", sexe: "M", telephone: "+221 76 345 67 89", adresse: "Thiès, Centre", email: "ibrahima.ndiaye@email.com", pieceIdentite: "SN-3456789", profession: "Comptable", dateSouscription: "2024-03-05", dateDebut: "2024-04-01", dateFin: "2025-03-31", statut: "Actif", type: "groupe" },
-  { id: "ASS-004", numero: "ASS-2024-004", nom: "Sow", prenom: "Fatou", dateNaissance: "1992-05-18", sexe: "F", telephone: "+221 77 456 78 90", adresse: "Saint-Louis", email: "fatou.sow@email.com", pieceIdentite: "SN-4567890", profession: "Enseignante", dateSouscription: "2024-01-20", dateDebut: "2024-02-15", dateFin: "2025-02-14", statut: "Suspendu", type: "famille" },
-  { id: "ASS-005", numero: "ASS-2024-005", nom: "Ba", prenom: "Ousmane", dateNaissance: "1982-09-30", sexe: "M", telephone: "+221 78 567 89 01", adresse: "Dakar, Parcelles", email: "ousmane.ba@email.com", pieceIdentite: "SN-5678901", profession: "Commercial", dateSouscription: "2024-04-01", dateDebut: "2024-05-01", dateFin: "2025-04-30", statut: "Actif", type: "groupe" },
+  { id: yearTag('ASS', 1), numero: yearTag('ASS', 1), nom: 'Diop', prenom: 'Moussa', dateNaissance: '1985-03-15', sexe: 'M', telephone: '+221 77 123 45 67', adresse: makeSenegalAddress('Dakar', 'Plateau'), email: 'moussa.diop@email.com', pieceIdentite: 'SN-1234567', profession: 'Ingénieur', dateSouscription: ymd(currentYear, 1, 15), dateDebut: ymd(currentYear, 2, 1), dateFin: ymd(nextYear, 1, 31), statut: 'Actif', type: 'famille' },
+  { id: yearTag('ASS', 2), numero: yearTag('ASS', 2), nom: 'Fall', prenom: 'Aminata', dateNaissance: '1990-07-22', sexe: 'F', telephone: '+221 78 234 56 78', adresse: makeSenegalAddress('Dakar', 'Almadies'), email: 'aminata.fall@email.com', pieceIdentite: 'SN-2345678', profession: 'Médecin', dateSouscription: ymd(currentYear, 2, 10), dateDebut: ymd(currentYear, 3, 1), dateFin: ymd(nextYear, 2, 28), statut: 'Actif', type: 'famille' },
+  { id: yearTag('ASS', 3), numero: yearTag('ASS', 3), nom: 'Ndiaye', prenom: 'Ibrahima', dateNaissance: '1978-11-08', sexe: 'M', telephone: '+221 76 345 67 89', adresse: makeSenegalAddress('Thiès', 'Centre'), email: 'ibrahima.ndiaye@email.com', pieceIdentite: 'SN-3456789', profession: 'Comptable', dateSouscription: ymd(currentYear, 3, 5), dateDebut: ymd(currentYear, 4, 1), dateFin: ymd(nextYear, 3, 31), statut: 'Actif', type: 'groupe' },
+  { id: yearTag('ASS', 4), numero: yearTag('ASS', 4), nom: 'Sow', prenom: 'Fatou', dateNaissance: '1992-05-18', sexe: 'F', telephone: '+221 77 456 78 90', adresse: makeSenegalAddress('Saint-Louis', 'Centre'), email: 'fatou.sow@email.com', pieceIdentite: 'SN-4567890', profession: 'Enseignante', dateSouscription: ymd(currentYear, 1, 20), dateDebut: ymd(currentYear, 2, 15), dateFin: ymd(nextYear, 2, 14), statut: 'Suspendu', type: 'famille' },
+  { id: yearTag('ASS', 5), numero: yearTag('ASS', 5), nom: 'Ba', prenom: 'Ousmane', dateNaissance: '1982-09-30', sexe: 'M', telephone: '+221 78 567 89 01', adresse: makeSenegalAddress('Dakar', 'Parcelles'), email: 'ousmane.ba@email.com', pieceIdentite: 'SN-5678901', profession: 'Commercial', dateSouscription: ymd(currentYear, 4, 1), dateDebut: ymd(currentYear, 5, 1), dateFin: ymd(nextYear, 4, 30), statut: 'Actif', type: 'groupe' },
 ];
 
 export const mockPolices: Police[] = [
-  { id: "POL-001", numero: "POL-2024-001", assurePrincipal: "Moussa Diop", type: "Famille", dateDebut: "2024-02-01", dateFin: "2025-01-31", statut: "Active", montantCotisation: "350,000 FCFA", nbBeneficiaires: 4 },
-  { id: "POL-002", numero: "POL-2024-002", assurePrincipal: "Aminata Fall", type: "Famille", dateDebut: "2024-03-01", dateFin: "2025-02-28", statut: "Active", montantCotisation: "280,000 FCFA", nbBeneficiaires: 2 },
-  { id: "POL-003", numero: "POL-2024-003", assurePrincipal: "Sonatel SA", type: "Groupe", dateDebut: "2024-01-01", dateFin: "2024-12-31", statut: "Active", montantCotisation: "12,500,000 FCFA", nbBeneficiaires: 250 },
-  { id: "POL-004", numero: "POL-2024-004", assurePrincipal: "Fatou Sow", type: "Famille", dateDebut: "2024-02-15", dateFin: "2025-02-14", statut: "Suspendue", montantCotisation: "220,000 FCFA", nbBeneficiaires: 3 },
-  { id: "POL-005", numero: "POL-2024-005", assurePrincipal: "CBAO Group", type: "Groupe", dateDebut: "2024-04-01", dateFin: "2025-03-31", statut: "Active", montantCotisation: "8,750,000 FCFA", nbBeneficiaires: 180 },
+  { id: 'POL-001', numero: `POL-${currentYear}-001`, assurePrincipal: 'Moussa Diop', type: 'Famille', dateDebut: ymd(currentYear, 2, 1), dateFin: ymd(nextYear, 1, 31), statut: 'Active', montantCotisation: '350,000 FCFA', nbBeneficiaires: 4 },
+  { id: 'POL-002', numero: `POL-${currentYear}-002`, assurePrincipal: 'Aminata Fall', type: 'Famille', dateDebut: ymd(currentYear, 3, 1), dateFin: ymd(nextYear, 2, 28), statut: 'Active', montantCotisation: '280,000 FCFA', nbBeneficiaires: 2 },
+  { id: 'POL-003', numero: `POL-${currentYear}-003`, assurePrincipal: 'Sonatel SA', type: 'Groupe', dateDebut: ymd(currentYear, 1, 1), dateFin: ymd(currentYear, 12, 31), statut: 'Active', montantCotisation: '12,500,000 FCFA', nbBeneficiaires: 250 },
+  { id: 'POL-004', numero: `POL-${currentYear}-004`, assurePrincipal: 'Fatou Sow', type: 'Famille', dateDebut: ymd(currentYear, 2, 15), dateFin: ymd(nextYear, 2, 14), statut: 'Suspendue', montantCotisation: '220,000 FCFA', nbBeneficiaires: 3 },
+  { id: 'POL-005', numero: `POL-${currentYear}-005`, assurePrincipal: 'CBAO Group', type: 'Groupe', dateDebut: ymd(currentYear, 4, 1), dateFin: ymd(nextYear, 3, 31), statut: 'Active', montantCotisation: '8,750,000 FCFA', nbBeneficiaires: 180 },
 ];
 
 export const mockPrestataires: Prestataire[] = [
@@ -32,11 +62,11 @@ export const mockPrestataires: Prestataire[] = [
 ];
 
 export const mockSinistres: Sinistre[] = [
-  { id: "SIN-001", numero: "SIN-2024-001", assure: "Moussa Diop", type: "Consultation", date: "2024-06-15", montantReclame: "25,000 FCFA", montantValide: "20,000 FCFA", statut: "Payé" },
-  { id: "SIN-002", numero: "SIN-2024-002", assure: "Aminata Fall", type: "Hospitalisation", date: "2024-07-02", montantReclame: "450,000 FCFA", montantValide: "405,000 FCFA", statut: "Validé" },
-  { id: "SIN-003", numero: "SIN-2024-003", assure: "Ibrahima Ndiaye", type: "Pharmacie", date: "2024-07-10", montantReclame: "35,000 FCFA", montantValide: "", statut: "En attente" },
-  { id: "SIN-004", numero: "SIN-2024-004", assure: "Fatou Sow", type: "Analyses", date: "2024-07-12", montantReclame: "85,000 FCFA", montantValide: "72,250 FCFA", statut: "Validé" },
-  { id: "SIN-005", numero: "SIN-2024-005", assure: "Ousmane Ba", type: "Consultation", date: "2024-07-15", montantReclame: "15,000 FCFA", montantValide: "", statut: "Rejeté" },
+  { id: 'SIN-001', numero: `SIN-${currentYear}-001`, assure: 'Moussa Diop', type: 'Consultation', date: ymd(currentYear, 6, 15), montantReclame: '25,000 FCFA', montantValide: '20,000 FCFA', statut: 'Payé' },
+  { id: 'SIN-002', numero: `SIN-${currentYear}-002`, assure: 'Aminata Fall', type: 'Hospitalisation', date: ymd(currentYear, 7, 2), montantReclame: '450,000 FCFA', montantValide: '405,000 FCFA', statut: 'Validé' },
+  { id: 'SIN-003', numero: `SIN-${currentYear}-003`, assure: 'Ibrahima Ndiaye', type: 'Pharmacie', date: ymd(currentYear, 7, 10), montantReclame: '35,000 FCFA', montantValide: '', statut: 'En attente' },
+  { id: 'SIN-004', numero: `SIN-${currentYear}-004`, assure: 'Fatou Sow', type: 'Analyses', date: ymd(currentYear, 7, 12), montantReclame: '85,000 FCFA', montantValide: '72,250 FCFA', statut: 'Validé' },
+  { id: 'SIN-005', numero: `SIN-${currentYear}-005`, assure: 'Ousmane Ba', type: 'Consultation', date: ymd(currentYear, 7, 15), montantReclame: '15,000 FCFA', montantValide: '', statut: 'Rejeté' },
 ];
 
 export const mockChartData = [

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
 import { UserMenu } from "./UserMenu";
@@ -6,7 +6,7 @@ import { Bell, Search, User, Building2, Stethoscope } from "lucide-react";
 import { NotificationSystem } from "@/components/NotificationSystem";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { mockAssures, mockPrestataires } from "@/data/mockData";
+import { DataService } from "@/services/dataService";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -17,16 +17,37 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [assures, setAssures] = useState<any[]>([]);
+  const [prestataires, setPrestataires] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const fetchedAssures = await DataService.getAssures();
+        setAssures(fetchedAssures);
+      } catch (error) {
+        console.error('AppLayout: impossible de charger les assurés', error);
+      }
+
+      try {
+        const fetchedPrestataires = await DataService.getPrestataires();
+        setPrestataires(fetchedPrestataires);
+      } catch (error) {
+        console.error('AppLayout: impossible de charger les prestataires', error);
+      }
+    };
+    loadData();
+  }, []);
 
   const allSearchItems = [
-    ...mockAssures.map(a => ({
+    ...assures.map(a => ({
       type: "Assuré" as const,
       label: `${a.prenom} ${a.nom}`,
       subtitle: a.numero,
       path: `/assures/${a.id}`,
       icon: <User size={16} />
     })),
-    ...mockPrestataires.map(p => ({
+    ...prestataires.map(p => ({
       type: "Prestataire" as const,
       label: p.nom,
       subtitle: p.specialite,
@@ -54,6 +75,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
         {/* Top bar */}
         <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-4 pl-12 lg:pl-0">
+            <img src="/logo1.png" alt="Logo" className="w-8 h-8 object-contain" />
             {title && <h2 className="font-display text-lg font-semibold">{title}</h2>}
           </div>
           <div className="flex items-center gap-3">

@@ -6,16 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { User, Mail, Phone, MapPin, Lock, Camera } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminProfilePage() {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nom: "Diallo",
-    prenom: "Amadou",
-    email: "admin@santeassur.sn",
-    telephone: "+221 77 123 45 67",
-    adresse: "Dakar, Plateau",
-    role: "Administrateur"
+    nom: user?.full_name?.split(' ')[1] || "Utilisateur",
+    prenom: user?.full_name?.split(' ')[0] || "",
+    email: user?.email || "",
+    telephone: "+221 77 527 97 27",
+    adresse: "Rufisque Ouest, Cité Poste, Lot N°67",
+    role: user?.role === 'admin' ? 'Administrateur' : user?.role === 'prestataire' ? 'Prestataire' : 'Client'
   });
   const [passwordData, setPasswordData] = useState({
     current: "",

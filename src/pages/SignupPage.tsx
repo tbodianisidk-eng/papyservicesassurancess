@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Stethoscope, Users, Mail, RefreshCw, Copy } from "lucide-react";
+import { Stethoscope, Users, Mail, RefreshCw, Copy } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -15,7 +15,8 @@ const SignupPage = () => {
   const { signUp } = useAuth();
   const [searchParams] = useSearchParams();
   
-  const initialRole = (searchParams.get('role') as UserRole) || 'client';
+  const urlRole = searchParams.get('role') as UserRole;
+  const initialRole = urlRole === 'prestataire' ? 'prestataire' : 'client'; // admin non autorisé via URL
   
   const [role, setRole] = useState<UserRole>(initialRole);
   const [email, setEmail] = useState("");
@@ -67,6 +68,16 @@ const SignupPage = () => {
       return;
     }
 
+    if (password.length < 8) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 8 caractères", variant: "destructive" });
+      return;
+    }
+
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins une majuscule et un chiffre", variant: "destructive" });
+      return;
+    }
+
     if (!fullName.trim()) {
       toast({
         title: "Erreur",
@@ -80,19 +91,10 @@ const SignupPage = () => {
     try {
       await signUp(finalEmail, password, role, fullName, organization);
       toast({
-        title: "Succès",
-        description: "Compte créé avec succès! Vous allez être redirigé...",
+        title: "Compte créé avec succès !",
+        description: "Vous pouvez maintenant vous connecter avec vos identifiants.",
       });
-      // Redirect based on role
-      setTimeout(() => {
-        if (role === 'admin') {
-          navigate('/dashboard');
-        } else if (role === 'prestataire') {
-          navigate('/prestataires');
-        } else {
-          navigate('/assures');
-        }
-      }, 1500);
+      navigate('/login');
     } catch (error: any) {
       toast({
         title: "Erreur d'inscription",
@@ -105,12 +107,6 @@ const SignupPage = () => {
   };
 
   const roles: { value: UserRole; label: string; description: string; icon: React.ReactNode }[] = [
-    {
-      value: 'admin',
-      label: 'Administrateur',
-      description: 'Gérer la plateforme',
-      icon: <Shield className="w-5 h-5" />,
-    },
     {
       value: 'prestataire',
       label: 'Prestataire',
@@ -129,24 +125,22 @@ const SignupPage = () => {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#E8F4F8' }}>
       <Card className="w-full max-w-2xl p-8 shadow-2xl">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
+          <img src="/logo1.png" alt="Logo" className="w-16 h-16 object-contain mb-4" />
           <h1 className="text-3xl font-bold">Créer un compte</h1>
-          <p className="text-gray-600 mt-2">Rejoignez notre plateforme d'assurance santé</p>
+          <p className="text-gray-600 mt-2">Rejoignez Papy Services Assurances</p>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-6">
           {/* Role Selection */}
           <div>
             <Label className="text-base font-semibold mb-3 block">Sélectionnez votre rôle</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 justify-center mx-auto max-w-md">
               {roles.map((r) => (
                 <button
                   key={r.value}
                   type="button"
                   onClick={() => setRole(r.value)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
+                  className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                     role === r.value
                       ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
