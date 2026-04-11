@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Shield, Users, FileText, Activity, ArrowRight, CheckCircle2, Sparkles, Menu, Phone, Mail, MapPin, Facebook, Twitter, Linkedin, Instagram, Star, TrendingUp, Clock, Award, Stethoscope } from "lucide-react";
+import { Shield, Users, FileText, Activity, ArrowRight, CheckCircle2, Menu, Phone, Mail, MapPin, Star, TrendingUp, Clock, Award, Stethoscope } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { FeatureSection } from "@/components/FeatureSection";
@@ -39,33 +39,6 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const features = [
-    { 
-      icon: Users, 
-      title: "Gestion des Assurés", 
-      desc: "Gérez vos clients et bénéficiaires en toute simplicité. Centralisez toutes les informations, suivez l'historique médical, gérez les ayants-droit et accédez instantanément aux dossiers complets. Interface intuitive pour une gestion optimale de votre portefeuille clients.", 
-      color: "from-blue-500 to-cyan-500" 
-    },
-    { 
-      icon: FileText, 
-      title: "Polices d'Assurance", 
-      desc: "Créez et suivez vos contrats d'assurance santé. Générez automatiquement les polices, gérez les renouvellements, suivez les garanties et plafonds en temps réel. Personnalisez les couvertures selon les besoins spécifiques de chaque client.", 
-      color: "from-purple-500 to-pink-500" 
-    },
-    { 
-      icon: Activity, 
-      title: "Suivi des Sinistres", 
-      desc: "Traitez les demandes de remboursement efficacement. Workflow automatisé de validation, calcul intelligent des remboursements selon les garanties, notifications en temps réel et historique complet. Réduisez les délais de traitement de 70%.", 
-      color: "from-orange-500 to-red-500" 
-    },
-    { 
-      icon: Shield, 
-      title: "Sécurité Optimale", 
-      desc: "Vos données protégées selon les normes les plus strictes. Conformité RGPD, chiffrement de bout en bout, sauvegardes automatiques quotidiennes, authentification multi-facteurs et traçabilité complète de toutes les opérations.", 
-      color: "from-emerald-500 to-teal-500" 
-    }
-  ];
-
   const testimonials = [
     { name: "Marie Dubois", role: "Directrice RH", text: "Une solution exceptionnelle qui a transformé notre gestion d'assurance.", rating: 5 },
     { name: "Jean Martin", role: "Gérant d'entreprise", text: "Interface intuitive et support client réactif. Je recommande vivement!", rating: 5 },
@@ -92,7 +65,7 @@ const Index = () => {
               <a href="#contact" className="px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all font-medium">Contact</a>
               <div className="w-px h-6 bg-gray-300 mx-2"></div>
               <Button onClick={() => navigate('/login')} variant="ghost" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 font-medium btn-ripple">Connexion</Button>
-              <Button onClick={() => navigate('/login')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all ml-2 btn-ripple">Commencer</Button>
+              <Button onClick={() => navigate('/login')} className="shadow-lg hover:shadow-xl ml-2">Commencer</Button>
             </div>
 
             <button className="md:hidden p-2 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -107,7 +80,7 @@ const Index = () => {
               <a href="#contact" className="block px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors font-medium">Contact</a>
               <div className="border-t border-blue-100 my-2"></div>
               <Button onClick={() => navigate('/login')} variant="outline" className="w-full btn-ripple">Connexion</Button>
-              <Button onClick={() => navigate('/login')} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 btn-ripple">Commencer</Button>
+              <Button onClick={() => navigate('/login')} className="w-full">Commencer</Button>
             </div>
           )}
         </div>
@@ -189,7 +162,7 @@ const Index = () => {
       </div>
 
       {/* Features Section with Sticky Images */}
-      <section id="features" className="relative z-20">
+      <section id="features" className="relative z-20 scroll-mt-20">
         <FeatureSection
           icon={<Users className="w-4 h-4" />}
           badge="Gestion"
@@ -273,7 +246,7 @@ const Index = () => {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 -mt-10 relative z-40 rounded-t-[50px]" style={{ backgroundColor: '#F0F8FB' }}>
+      <section id="testimonials" className="py-20 -mt-10 relative z-40 rounded-t-[50px] scroll-mt-20" style={{ backgroundColor: '#F0F8FB' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Ce que disent nos clients</h2>
@@ -304,48 +277,18 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">Rejoignez notre plateforme</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Créez votre compte en tant qu'administrateur, prestataire ou client</p>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Créez votre compte en tant que prestataire ou client</p>
           </div>
 
           {/* Registration Cards */}
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            {/* Admin Card */}
-            <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-bl-full opacity-50"></div>
-              <div className="relative p-8">
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2 text-gray-900">Administrateur</h3>
-                <p className="text-gray-600 mb-6">Gérez la plateforme complète, superviser les utilisateurs et contrôler tous les modules.</p>
-                <ul className="space-y-2 mb-8 text-sm text-gray-700">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span>Accès complet au dashboard</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span>Gestion des utilisateurs</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span>Rapports avancés</span>
-                  </li>
-                </ul>
-                <Button onClick={() => navigate('/signup?role=admin')} className="w-full bg-blue-600 hover:bg-blue-700">
-                  Créer un compte admin
-                </Button>
-              </div>
-            </Card>
-
+          <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-3xl mx-auto">
             {/* Prestataire Card */}
-            <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-purple-500 md:scale-105">
+            <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-purple-500">
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-bl-full opacity-50"></div>
               <div className="relative p-8">
                 <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-4">
                   <Stethoscope className="w-6 h-6 text-white" />
                 </div>
-                <div className="inline-block bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold mb-2">POPULAIRE</div>
                 <h3 className="text-2xl font-bold mb-2 text-gray-900">Prestataire</h3>
                 <p className="text-gray-600 mb-6">Fournissez vos services de santé et gériez vos consultations, prescriptions et remboursements.</p>
                 <ul className="space-y-2 mb-8 text-sm text-gray-700">
@@ -391,7 +334,7 @@ const Index = () => {
                     <span>Accès aux cartes</span>
                   </li>
                 </ul>
-                <Button onClick={() => navigate('/signup?role=client')} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Button onClick={() => navigate('/signup?role=client')} className="w-full">
                   Créer un compte client
                 </Button>
               </div>
@@ -409,7 +352,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="bg-gray-900 text-gray-300 py-16 relative z-50">
+      <footer id="contact" className="bg-gray-900 text-gray-300 py-16 relative z-50 scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
@@ -451,17 +394,17 @@ const Index = () => {
             <div>
               <h3 className="text-white font-semibold mb-4">Suivez-nous</h3>
               <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
-                  <Facebook className="w-5 h-5" />
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors" aria-label="Facebook">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                 </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-400 transition-colors">
-                  <Twitter className="w-5 h-5" />
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-sky-500 transition-colors" aria-label="Twitter / X">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
-                  <Linkedin className="w-5 h-5" />
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors" aria-label="LinkedIn">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
                 </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors">
-                  <Instagram className="w-5 h-5" />
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors" aria-label="Instagram">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path fill="none" stroke="currentColor" strokeWidth="2" d="M2 2h20v20H2z" style={{display:"none"}}/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="none" stroke="currentColor" strokeWidth="2" className="stroke-current"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="currentColor" strokeWidth="2"/></svg>
                 </a>
               </div>
             </div>

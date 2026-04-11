@@ -114,7 +114,7 @@ export default function NewConsultationPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+              <Button type="submit" className="w-full">
                 Créer la consultation
               </Button>
             </form>

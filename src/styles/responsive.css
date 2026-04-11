@@ -1,0 +1,344 @@
+/* ========================================
+   RESPONSIVE UTILITIES
+   ======================================== */
+
+/* Mobile-first approach */
+@layer components {
+  /* Containers */
+  .container-responsive {
+    @apply w-full px-4 sm:px-6 lg:px-8;
+  }
+
+  .page-container {
+    @apply space-y-4 sm:space-y-6 max-w-full;
+  }
+
+  /* Tables */
+  .table-wrapper {
+    @apply overflow-x-auto -mx-4 sm:mx-0;
+  }
+
+  .table-responsive {
+    @apply w-full text-xs sm:text-sm;
+  }
+
+  .table-responsive thead tr {
+    @apply border-b border-border bg-muted/50;
+  }
+
+  .table-responsive th {
+    @apply text-left py-2 sm:py-3 px-3 sm:px-4 font-medium text-muted-foreground;
+  }
+
+  .table-responsive td {
+    @apply py-2 sm:py-3 px-3 sm:px-4;
+  }
+
+  /* Cards */
+  .card-responsive {
+    @apply bg-card rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-card border border-border;
+  }
+
+  /* Buttons */
+  .btn-responsive {
+    @apply px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg transition-colors;
+  }
+
+  /* Ultra-wide screens (MacBook Pro 16", 4K monitors) */
+  .ultra-wide-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16;
+  }
+
+  .ultra-wide-grid {
+    @apply grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  .ultra-wide-card {
+    @apply bg-card rounded-lg xs:rounded-xl p-3 xs:p-4 sm:p-5 lg:p-6 xl:p-8 shadow-card border border-border;
+  }
+
+  .ultra-wide-text {
+    @apply text-sm xs:text-base lg:text-lg xl:text-xl;
+  }
+
+  .ultra-wide-heading {
+    @apply text-lg xs:text-xl sm:text-2xl lg:text-3xl xl:text-4xl;
+  }
+
+  /* Spacing for ultra-wide */
+  .ultra-wide-space-y {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8 xl:space-y-10;
+  }
+
+  .ultra-wide-gap {
+    @apply gap-3 sm:gap-4 lg:gap-6 xl:gap-8;
+  }
+
+  /* Table optimizations for ultra-wide */
+  .table-ultra-wide {
+    @apply text-xs sm:text-sm lg:text-base;
+  }
+
+  .table-ultra-wide th {
+    @apply py-3 sm:py-4 lg:py-5 px-4 sm:px-6 lg:px-8;
+  }
+
+  .table-ultra-wide td {
+    @apply py-3 sm:py-4 lg:py-5 px-4 sm:px-6 lg:px-8;
+  }
+
+  .input-responsive {
+    @apply w-full px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg border border-input bg-card;
+  }
+
+  /* Grids */
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4;
+  }
+
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4;
+  }
+
+  .grid-responsive-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4;
+  }
+
+  /* Text */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-lg {
+    @apply text-base sm:text-lg;
+  }
+
+  .text-responsive-xl {
+    @apply text-lg sm:text-xl;
+  }
+
+  .text-responsive-2xl {
+    @apply text-xl sm:text-2xl;
+  }
+
+  /* Spacing */
+  .gap-responsive {
+    @apply gap-2 sm:gap-3 md:gap-4;
+  }
+
+  .p-responsive {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+
+  .px-responsive {
+    @apply px-3 sm:px-4 md:px-6;
+  }
+
+  .py-responsive {
+    @apply py-3 sm:py-4 md:py-6;
+  }
+  /* Heights */
+  .h-responsive-sm {
+    @apply h-8 sm:h-9 md:h-10;
+  }
+
+  .h-responsive-md {
+    @apply h-10 sm:h-11 md:h-12;
+  }
+
+  /* Icons */
+  .icon-responsive {
+    @apply w-4 h-4 sm:w-5 sm:h-5;
+  }
+
+  .icon-responsive-lg {
+    @apply w-5 h-5 sm:w-6 sm:h-6;
+  }
+
+  /* Shadows */
+  .shadow-responsive {
+    @apply shadow-sm sm:shadow-md lg:shadow-lg;
+  }
+
+  /* Borders */
+  .rounded-responsive {
+    @apply rounded-md sm:rounded-lg lg:rounded-xl;
+  }
+
+  /* Flex utilities */
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row;
+  }
+
+  .justify-responsive {
+    @apply justify-start sm:justify-between;
+  }
+
+  /* Display utilities */
+  .block-responsive {
+    @apply block sm:hidden lg:block;
+  }
+
+  .hidden-responsive {
+    @apply hidden sm:block lg:hidden;
+  }
+  /* Truncate helpers */
+  .truncate-responsive {
+    @apply truncate lg:whitespace-normal;
+  }
+
+  /* Icons */
+  .icon-responsive {
+    @apply w-4 h-4 sm:w-5 sm:h-5;
+  }
+
+  .icon-responsive-lg {
+    @apply w-5 h-5 sm:w-6 sm:h-6;
+  }
+
+  /* Flex responsive */
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row gap-2 sm:gap-3;
+  }
+
+  /* Hide on mobile */
+  .hide-mobile {
+    @apply hidden sm:flex;
+  }
+
+  .hide-mobile-block {
+    @apply hidden sm:block;
+  }
+
+  /* Show on mobile */
+  .show-mobile {
+    @apply sm:hidden;
+  }
+
+  .show-mobile-block {
+    @apply sm:hidden block;
+  }
+
+  /* Headers */
+  .header-responsive {
+    @apply h-16 sm:h-16 md:h-20;
+  }
+
+  /* Sidebar */
+  .sidebar-responsive {
+    @apply hidden md:flex md:flex-col md:w-64;
+  }
+
+  /* Main content */
+  .main-responsive {
+    @apply flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background;
+  }
+}
+
+/* ========================================
+   RESPONSIVE BREAKPOINT HELPERS
+   ======================================== */
+
+@media (max-width: 374px) {
+  /* 2XS: 320px - 374px (small phones) */
+  .max-2xs\:hidden {
+    display: none !important;
+  }
+
+  .max-2xs\:block {
+    display: block !important;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 639px) {
+  /* XS: 375px - 639px (phones) */
+  .xs\:block {
+    display: block !important;
+  }
+
+  .xs\:hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  /* SM: 640px - 767px (small tablets) */
+  .sm\:block {
+    display: block !important;
+  }
+
+  .sm\:hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* MD: 768px - 1023px (tablets) */
+  .md\:block {
+    display: block !important;
+  }
+
+  .md\:hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* LG+: 1024px+ (desktops) */
+  .lg\:block {
+    display: block !important;
+  }
+
+  .lg\:hidden {
+    display: none !important;
+  }
+}
+
+/* ========================================
+   RESPONSIVE FIXES
+   ======================================== */
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 640px) {
+  button,
+  a,
+  [role="button"] {
+    min-width: 44px;
+    min-height: 44px;
+    @apply flex items-center justify-center;
+  }
+}
+
+/* Fix overflow issues */
+@media (max-width: 640px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Improve text readability on small screens */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+}

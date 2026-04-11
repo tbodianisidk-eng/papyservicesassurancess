@@ -32,6 +32,7 @@ import MaladieFamillePage from "./pages/MaladieFamillePage";
 import NewFamillePage from "./pages/NewFamillePage";
 import AdminProfilePage from "./pages/AdminProfilePage";
 import UsersPage from "./pages/UsersPage";
+import StatistiquesPage from "./pages/StatistiquesPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/prescriptions/:id" element={<ProtectedRoute element={<PrescriptionDetailsPage />} />} />
 
             {/* Routes admin uniquement */}
+            <Route path="/statistiques" element={<ProtectedRoute element={<StatistiquesPage />} requiredRoles={['admin']} />} />
             <Route path="/users" element={<ProtectedRoute element={<UsersPage />} requiredRoles={['admin']} />} />
             <Route path="/registrations" element={<ProtectedRoute element={<RegistrationManagementPage />} requiredRoles={['admin']} />} />
             <Route path="/assures" element={<ProtectedRoute element={<AssuresPage />} requiredRoles={['admin']} />} />

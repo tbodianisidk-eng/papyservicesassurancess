@@ -13,6 +13,8 @@ public class UserDto {
     private String fullName;
     private String role;
     private String organization;
+    private String telephone;
+    private String adresse;
     private String status;
 
     public static UserDto fromEntity(User user) {
@@ -22,6 +24,8 @@ public class UserDto {
             .fullName(user.getFullName())
             .role(user.getRole().name())
             .organization(user.getOrganization())
+            .telephone(user.getTelephone())
+            .adresse(user.getAdresse())
             .status(user.getStatus().name())
             .build();
     }

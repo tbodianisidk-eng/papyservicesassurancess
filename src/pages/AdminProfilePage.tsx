@@ -19,6 +19,9 @@ export default function AdminProfilePage() {
     adresse: "Rufisque Ouest, Cité Poste, Lot N°67",
     role: user?.role === 'admin' ? 'Administrateur' : user?.role === 'prestataire' ? 'Prestataire' : 'Client'
   });
+
+  const initials = (user?.full_name || user?.email || 'U')
+    .split(' ').map((w: string) => w[0] ?? '').join('').toUpperCase().slice(0, 2) || 'AD';
   const [passwordData, setPasswordData] = useState({
     current: "",
     new: "",
@@ -56,7 +59,7 @@ export default function AdminProfilePage() {
           <div className="flex items-start gap-6 mb-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
-                AD
+                {initials}
               </div>
               <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50">
                 <Camera className="w-4 h-4" />
@@ -69,7 +72,7 @@ export default function AdminProfilePage() {
             </div>
             <Button
               onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-              className="btn-ripple bg-gradient-to-r from-blue-600 to-purple-600"
+              className="btn-ripple"
             >
               {isEditing ? "Enregistrer" : "Modifier"}
             </Button>
@@ -175,7 +178,7 @@ export default function AdminProfilePage() {
             </div>
             <Button 
               onClick={handlePasswordChange}
-              className="btn-ripple bg-gradient-to-r from-blue-600 to-purple-600"
+              className="btn-ripple"
             >
               Changer le mot de passe
             </Button>
@@ -185,22 +188,17 @@ export default function AdminProfilePage() {
         <Card className="p-6">
           <h3 className="text-xl font-bold mb-4">Statistiques</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-blue-600">2,847</p>
-              <p className="text-sm text-muted-foreground">Assurés gérés</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">1,234</p>
-              <p className="text-sm text-muted-foreground">Polices actives</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-purple-600">156</p>
-              <p className="text-sm text-muted-foreground">Sinistres traités</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-orange-600">45.2M</p>
-              <p className="text-sm text-muted-foreground">FCFA remboursés</p>
-            </div>
+            {[
+              { value: "2 847", label: "Assurés gérés" },
+              { value: "1 234", label: "Polices actives" },
+              { value: "156",   label: "Sinistres traités" },
+              { value: "45.2M", label: "FCFA remboursés" },
+            ].map(({ value, label }) => (
+              <div key={label} className="text-center p-3 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-100">
+                <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{label}</p>
+              </div>
+            ))}
           </div>
         </Card>
       </div>

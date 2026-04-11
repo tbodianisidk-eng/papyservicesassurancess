@@ -1,183 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Pill, User, Calendar, FileText, Download, Eye } from "lucide-react";
+import { Plus, Search, Pill, FileText, Loader2, AlertCircle, Download, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-interface Prescription {
-  id: string;
-  numero: string;
-  assure: string;
-  medecin: string;
-  date: string;
-  medicaments: { nom: string; dosage: string; duree: string }[];
-  instructions: string;
-  statut: "Active" | "Expirée" | "Utilisée";
-  pharmacie?: string;
-}
-
-const mockPrescriptions: Prescription[] = [
-  {
-    id: "1",
-    numero: "ORD-2024-001",
-    assure: "Moussa Diop",
-    medecin: "Dr. Abdoulaye Diallo",
-    date: "2024-07-20",
-    medicaments: [
-      { nom: "Paracétamol 500mg", dosage: "1 comprimé 3x/jour", duree: "5 jours" },
-      { nom: "Amoxicilline 1g", dosage: "1 comprimé 2x/jour", duree: "7 jours" }
-    ],
-    instructions: "À prendre après les repas. Boire beaucoup d'eau.",
-    statut: "Active"
-  },
-  {
-    id: "2",
-    numero: "ORD-2024-002",
-    assure: "Aminata Fall",
-    medecin: "Dr. Mariama Bâ",
-    date: "2024-07-22",
-    medicaments: [
-      { nom: "Acide folique 5mg", dosage: "1 comprimé/jour", duree: "30 jours" },
-      { nom: "Fer 80mg", dosage: "1 comprimé/jour", duree: "30 jours" }
-    ],
-    instructions: "Supplémentation prénatale. Prendre le matin à jeun.",
-    statut: "Active"
-  },
-  {
-    id: "3",
-    numero: "ORD-2024-003",
-    assure: "Ibrahima Ndiaye",
-    medecin: "Dr. Abdoulaye Diallo",
-    date: "2024-07-15",
-    medicaments: [
-      { nom: "Ibuprofène 400mg", dosage: "1 comprimé 3x/jour", duree: "3 jours" }
-    ],
-    instructions: "En cas de douleur. Ne pas dépasser 3 jours.",
-    statut: "Utilisée",
-    pharmacie: "Pharmacie Pasteur"
-  },
-  {
-    id: "4",
-    numero: "ORD-2024-004",
-    assure: "Fatou Sow",
-    medecin: "Dr. Omar Sarr",
-    date: "2024-06-20",
-    medicaments: [
-      { nom: "Collyre hydratant", dosage: "2 gouttes 4x/jour", duree: "14 jours" }
-    ],
-    instructions: "Pour sécheresse oculaire.",
-    statut: "Expirée"
-  },
-  {
-    id: "5",
-    numero: "ORD-2024-005",
-    assure: "Ousmane Ba",
-    medecin: "Dr. Abdoulaye Diallo",
-    date: "2024-07-23",
-    medicaments: [
-      { nom: "Oméprazole 20mg", dosage: "1 comprimé/jour", duree: "30 jours" },
-      { nom: "Gaviscon", dosage: "1 sachet après repas", duree: "15 jours" }
-    ],
-    instructions: "Traitement pour reflux gastrique. Prendre avant le petit-déjeuner.",
-    statut: "Active"
-  }
-];
-
-const statusConfig = {
-  "Active": { style: "bg-green-100 text-green-700 border-green-200" },
-  "Expirée": { style: "bg-gray-100 text-gray-700 border-gray-200" },
-  "Utilisée": { style: "bg-blue-100 text-blue-700 border-blue-200" }
-};
+import { DataService } from "@/services/dataService";
 
 export default function PrescriptionsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const filtered = mockPrescriptions.filter(
-    (p) =>
-      p.numero.toLowerCase().includes(search.toLowerCase()) ||
-      p.assure.toLowerCase().includes(search.toLowerCase()) ||
-      p.medecin.toLowerCase().includes(search.toLowerCase())
-  );
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const downloadPrescription = (prescription: Prescription) => {
-    const canvas = document.createElement('canvas');
+  useEffect(() => {
+    DataService.getPrescriptions()
+      .then((list) => setPrescriptions(list ?? []))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const assureNom = (p: any) => {
+    const assure = p.consultation?.assure;
+    return assure ? `${assure.nom} ${assure.prenom}` : "";
+  };
+
+  const filtered = prescriptions.filter((p) => {
+    const q = search.toLowerCase();
+    return (
+      assureNom(p).toLowerCase().includes(q) ||
+      (p.medicament || "").toLowerCase().includes(q) ||
+      (p.consultation?.prestataire?.nom || "").toLowerCase().includes(q)
+    );
+  });
+
+  const downloadPrescription = (p: any) => {
+    const canvas = document.createElement("canvas");
     canvas.width = 800;
-    canvas.height = 1100;
-    const ctx = canvas.getContext('2d');
-    
+    canvas.height = 900;
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, 800, 1100);
-
-    ctx.fillStyle = '#2563eb';
-    ctx.fillRect(0, 0, 800, 120);
-    
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 32px Arial';
-    ctx.fillText('ORDONNANCE MÉDICALE', 50, 50);
-    ctx.font = '18px Arial';
-    ctx.fillText('République du Sénégal - Ministère de la Santé', 50, 85);
-
-    ctx.fillStyle = 'black';
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText(`Ordonnance N°: ${prescription.numero}`, 50, 160);
-    ctx.fillText(`Date: ${prescription.date}`, 550, 160);
-    
-    ctx.font = '14px Arial';
-    ctx.fillText(`Patient: ${prescription.assure}`, 50, 200);
-    ctx.fillText(`Médecin: ${prescription.medecin}`, 50, 230);
-
-    ctx.strokeStyle = '#2563eb';
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, 800, 900);
+    ctx.fillStyle = "#2563eb";
+    ctx.fillRect(0, 0, 800, 110);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 28px Arial";
+    ctx.fillText("ORDONNANCE MÉDICALE", 50, 50);
+    ctx.font = "16px Arial";
+    ctx.fillText("Assurance Santé Connect", 50, 85);
+    ctx.fillStyle = "black";
+    ctx.font = "bold 15px Arial";
+    ctx.fillText(`Patient : ${assureNom(p) || "—"}`, 50, 150);
+    ctx.fillText(`Médecin : ${p.consultation?.prestataire?.nom || "—"}`, 50, 180);
+    ctx.fillText(`Date : ${p.createdAt ? new Date(p.createdAt).toLocaleDateString("fr-FR") : "—"}`, 50, 210);
+    ctx.strokeStyle = "#2563eb";
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(50, 260);
-    ctx.lineTo(750, 260);
-    ctx.stroke();
-
-    ctx.font = 'bold 18px Arial';
-    ctx.fillText('MÉDICAMENTS PRESCRITS:', 50, 300);
-    
-    let yPos = 340;
-    ctx.font = '14px Arial';
-    prescription.medicaments.forEach((med, idx) => {
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText(`${idx + 1}. ${med.nom}`, 70, yPos);
-      ctx.font = '14px Arial';
-      ctx.fillText(`   Dosage: ${med.dosage}`, 70, yPos + 25);
-      ctx.fillText(`   Durée: ${med.duree}`, 70, yPos + 50);
-      yPos += 90;
-    });
-
-    yPos += 20;
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText('INSTRUCTIONS:', 50, yPos);
-    ctx.font = '14px Arial';
-    ctx.fillText(prescription.instructions, 70, yPos + 30);
-
-    yPos += 100;
-    ctx.strokeStyle = '#2563eb';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(450, yPos);
-    ctx.lineTo(700, yPos);
-    ctx.stroke();
-    ctx.font = '12px Arial';
-    ctx.fillText('Signature et cachet du médecin', 480, yPos + 20);
-
-    ctx.fillStyle = '#666';
-    ctx.font = '10px Arial';
-    ctx.fillText('Cette ordonnance est valable 30 jours', 50, 1050);
-
+    ctx.beginPath(); ctx.moveTo(50, 235); ctx.lineTo(750, 235); ctx.stroke();
+    ctx.font = "bold 17px Arial";
+    ctx.fillText("MÉDICAMENT PRESCRIT :", 50, 270);
+    ctx.font = "bold 15px Arial";
+    ctx.fillText(p.medicament || "—", 70, 305);
+    ctx.font = "14px Arial";
+    ctx.fillText(`Dosage : ${p.dosage || "—"}`, 70, 335);
+    ctx.fillText(`Durée : ${p.duree || "—"}`, 70, 360);
+    if (p.instructions) {
+      ctx.font = "bold 15px Arial";
+      ctx.fillText("Instructions :", 50, 410);
+      ctx.font = "14px Arial";
+      ctx.fillText(p.instructions, 70, 440);
+    }
+    ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(450, 750); ctx.lineTo(700, 750); ctx.stroke();
+    ctx.font = "12px Arial"; ctx.fillStyle = "#555";
+    ctx.fillText("Signature du prescripteur", 490, 770);
+    ctx.fillStyle = "#888"; ctx.font = "10px Arial";
+    ctx.fillText("Ordonnance valable 30 jours", 50, 870);
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ordonnance-${prescription.numero}.png`;
-        a.click();
+        const a = document.createElement("a");
+        a.href = url; a.download = `ordonnance-${p.id}.png`; a.click();
         URL.revokeObjectURL(url);
       }
     });
@@ -185,157 +88,130 @@ export default function PrescriptionsPage() {
 
   return (
     <AppLayout title="Gestion des Ordonnances">
-      <div className="space-y-4 max-w-7xl">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                <Pill className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-900">
-                  {mockPrescriptions.filter(p => p.statut === "Active").length}
-                </p>
-                <p className="text-sm text-green-700">Actives</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-900">
-                  {mockPrescriptions.filter(p => p.statut === "Utilisée").length}
-                </p>
-                <p className="text-sm text-blue-700">Utilisées</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-purple-900">{mockPrescriptions.length}</p>
-                <p className="text-sm text-purple-700">Total</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+      <div className="space-y-4 sm:space-y-5">
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 max-w-md w-full">
+        {/* ── Compteurs ──────────────────────────────────────────────── */}
+        {!loading && !error && (
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {[
+              { label: "Total",        value: prescriptions.length, bg: "bg-green-50",  border: "border-green-200", num: "text-green-900", sub: "text-green-700",  icon: <Pill size={15} />,      iconBg: "bg-green-600" },
+              { label: "Consultations",value: new Set(prescriptions.map(p => p.consultation?.id).filter(Boolean)).size, bg: "bg-blue-50", border: "border-blue-200", num: "text-blue-900", sub: "text-blue-700", icon: <FileText size={15} />, iconBg: "bg-blue-600" },
+              { label: "Patients",     value: new Set(prescriptions.map(p => p.consultation?.assure?.id).filter(Boolean)).size, bg: "bg-purple-50", border: "border-purple-200", num: "text-purple-900", sub: "text-purple-700", icon: <FileText size={15} />, iconBg: "bg-purple-600" },
+            ].map(c => (
+              <div key={c.label} className={`${c.bg} border ${c.border} rounded-xl p-2.5 sm:p-4 flex items-center gap-2 sm:gap-3`}>
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 ${c.iconBg} rounded-lg flex items-center justify-center text-white shrink-0`}>
+                  {c.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-lg sm:text-2xl font-bold ${c.num} leading-none`}>{c.value}</p>
+                  <p className={`text-xs sm:text-sm ${c.sub} truncate mt-0.5`}>{c.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Barre d'actions ────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 sm:max-w-md">
             <div className="flex items-center gap-2 flex-1 px-3 py-2 rounded-lg border border-input bg-card text-sm">
-              <Search size={16} className="text-muted-foreground" />
+              <Search size={15} className="text-muted-foreground shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher une ordonnance..."
-                className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                placeholder="Rechercher..."
+                className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-0 text-sm"
               />
             </div>
           </div>
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600" onClick={() => navigate('/prescriptions/new')}>
-            <Plus size={16} className="mr-2" />
-            Nouvelle ordonnance
+          <Button
+            className="whitespace-nowrap shrink-0"
+            onClick={() => navigate("/prescriptions/new")}
+          >
+            <Plus size={15} className="mr-1.5" />
+            <span className="hidden sm:inline">Nouvelle ordonnance</span>
+            <span className="sm:hidden">Nouvelle</span>
           </Button>
         </div>
 
-        {/* Liste des ordonnances */}
-        <div className="space-y-4">
-          {filtered.map((prescription, i) => {
-            const config = statusConfig[prescription.statut];
-            
-            return (
+        {/* ── États ──────────────────────────────────────────────────── */}
+        {loading ? (
+          <div className="flex items-center justify-center h-48 gap-3 text-muted-foreground">
+            <Loader2 size={22} className="animate-spin" />
+            <span className="text-sm">Chargement...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-2 text-center px-4">
+            <AlertCircle size={36} className="text-destructive opacity-60" />
+            <p className="font-medium text-sm">Impossible de charger les ordonnances</p>
+            <p className="text-xs text-muted-foreground">Vérifiez que le backend est démarré</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-3 text-center px-4">
+            <Pill size={40} className="text-muted-foreground opacity-30" />
+            <p className="font-semibold">{search ? "Aucun résultat" : "Aucune ordonnance enregistrée"}</p>
+            {!search && (
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Les ordonnances sont créées à partir des consultations médicales.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((p, i) => (
               <motion.div
-                key={prescription.id}
+                key={p.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
+                className="bg-card rounded-xl p-4 sm:p-5 border border-border hover:shadow-md transition-shadow"
               >
-                <Card className="p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                        <Pill className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-lg">{prescription.numero}</p>
-                        <p className="text-sm text-muted-foreground">Prescrit le {prescription.date}</p>
-                      </div>
-                    </div>
-                    <span className={`inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border font-medium ${config.style}`}>
-                      {prescription.statut}
-                    </span>
+                {/* En-tête */}
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                    <Pill size={17} />
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Patient:</span>
-                      <span className="font-medium">{prescription.assure}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Médecin:</span>
-                      <span className="font-medium">{prescription.medecin}</span>
-                    </div>
-                  </div>
-
-                  {/* Médicaments */}
-                  <div className="border-t pt-4 mb-4">
-                    <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-                      <Pill className="w-4 h-4" />
-                      Médicaments prescrits:
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate text-sm sm:text-base">{assureNom(p) || "Patient inconnu"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {p.createdAt ? `Prescrit le ${new Date(p.createdAt).toLocaleDateString("fr-FR")}` : "—"}
                     </p>
-                    <div className="space-y-2">
-                      {prescription.medicaments.map((med, idx) => (
-                        <div key={idx} className="bg-gray-50 p-3 rounded-lg">
-                          <p className="font-medium text-sm">{med.nom}</p>
-                          <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                            <span>Dosage: {med.dosage}</span>
-                            <span>Durée: {med.duree}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {p.consultation?.prestataire?.nom && (
+                      <p className="text-xs text-muted-foreground truncate">Dr. {p.consultation.prestataire.nom}</p>
+                    )}
                   </div>
+                </div>
 
-                  {/* Instructions */}
-                  <div className="border-t pt-4 mb-4">
-                    <p className="text-sm text-muted-foreground mb-1">Instructions:</p>
-                    <p className="text-sm">{prescription.instructions}</p>
+                {/* Médicament */}
+                <div className="bg-muted/40 rounded-lg p-2.5 sm:p-3 mb-3">
+                  <p className="font-semibold text-sm truncate">{p.medicament || "—"}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
+                    <span>Dosage : <span className="text-foreground font-medium">{p.dosage || "—"}</span></span>
+                    <span>Durée : <span className="text-foreground font-medium">{p.duree || "—"}</span></span>
                   </div>
+                </div>
 
-                  {prescription.pharmacie && (
-                    <div className="border-t pt-4 mb-4">
-                      <p className="text-sm text-muted-foreground">
-                        Délivrée par: <span className="font-medium text-foreground">{prescription.pharmacie}</span>
-                      </p>
-                    </div>
-                  )}
+                {p.instructions && (
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                    <span className="font-medium text-foreground">Instructions :</span> {p.instructions}
+                  </p>
+                )}
 
-                  {/* Actions */}
-                  <div className="border-t pt-4 flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => downloadPrescription(prescription)}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Télécharger
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/prescriptions/${prescription.id}`)}>
-                      <Eye className="w-4 h-4 mr-2" />
-                      Détails
-                    </Button>
-                  </div>
-                </Card>
+                {/* Actions */}
+                <div className="border-t pt-3 flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => downloadPrescription(p)} className="text-xs h-8">
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    Télécharger
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/prescriptions/${p.id}`)} className="text-xs h-8">
+                    <Eye className="w-3.5 h-3.5 mr-1.5" />
+                    Détails
+                  </Button>
+                </div>
               </motion.div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </AppLayout>
   );

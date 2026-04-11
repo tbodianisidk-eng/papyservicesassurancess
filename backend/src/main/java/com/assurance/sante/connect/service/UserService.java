@@ -30,14 +30,20 @@ public class UserService {
     public UserDto updateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        
+
         if (userDto.getFullName() != null) {
             user.setFullName(userDto.getFullName());
         }
         if (userDto.getOrganization() != null) {
             user.setOrganization(userDto.getOrganization());
         }
-        
+        if (userDto.getStatus() != null) {
+            user.setStatus(User.UserStatus.valueOf(userDto.getStatus().toUpperCase()));
+        }
+        if (userDto.getRole() != null) {
+            user.setRole(User.UserRole.valueOf(userDto.getRole().toUpperCase()));
+        }
+
         user = userRepository.save(user);
         return UserDto.fromEntity(user);
     }

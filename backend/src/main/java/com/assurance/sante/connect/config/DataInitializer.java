@@ -21,23 +21,27 @@ public class DataInitializer implements CommandLineRunner {
         String defaultPassword = "admin1";
 
         for (String email : adminEmails) {
-            // Always recreate admin users for testing
-            userRepository.findByEmail(email).ifPresent(user -> {
-                userRepository.delete(user);
-                System.out.println("Deleted existing admin user: " + email);
-            });
-
-            User admin = User.builder()
-                .email(email)
-                .password(passwordEncoder.encode(defaultPassword))
-                .fullName("Administrateur")
-                .role(User.UserRole.ADMIN)
-                .organization("Assurance Santé Connect")
-                .status(User.UserStatus.ACTIVE)
-                .build();
-
-            userRepository.save(admin);
-            System.out.println("Admin user created: " + email + " / " + defaultPassword);
+            var existing = userRepository.findByEmail(email);
+            if (existing.isPresent()) {
+                // Always reset admin password and status to ensure they work
+                User admin = existing.get();
+                admin.setPassword(passwordEncoder.encode(defaultPassword));
+                admin.setStatus(User.UserStatus.ACTIVE);
+                admin.setRole(User.UserRole.ADMIN);
+                userRepository.save(admin);
+                System.out.println("Admin user updated: " + email + " / " + defaultPassword);
+            } else {
+                User admin = User.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(defaultPassword))
+                    .fullName("Administrateur")
+                    .role(User.UserRole.ADMIN)
+                    .organization("Assurance Santé Connect")
+                    .status(User.UserStatus.ACTIVE)
+                    .build();
+                userRepository.save(admin);
+                System.out.println("Admin user created: " + email + " / " + defaultPassword);
+            }
         }
     }
 }

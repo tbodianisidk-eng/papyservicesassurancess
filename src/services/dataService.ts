@@ -1,33 +1,6 @@
 // Data service - connecté au backend Spring Boot API
 import { apiClient } from './apiClient';
 
-// Données locales pour Familles et Groupes (pas d'endpoint backend dédié)
-let localFamilles: any[] = [
-  {
-    id: 1,
-    principal: "Amadou Diallo",
-    telephone: "+221 77 123 45 67",
-    beneficiaires: ["Fatou Diallo (Épouse)", "Moussa Diallo (Fils)", "Aïcha Diallo (Fille)"],
-    dateDebut: "2024-01-15",
-    dateFin: "2025-01-14",
-    prime: "850000",
-    statut: "Actif"
-  }
-];
-
-let localGroupes: any[] = [
-  {
-    id: 1,
-    entreprise: "Sonatel SA",
-    secteur: "Télécommunications",
-    employes: 450,
-    assures: 1350,
-    debut: "2024-01-01",
-    fin: "2024-12-31",
-    prime: "45000000",
-    statut: "Actif"
-  }
-];
 
 export class DataService {
 
@@ -61,6 +34,14 @@ export class DataService {
 
   static async createPolice(data: any) {
     return await apiClient.createPolice(data);
+  }
+
+  static async updatePolice(id: string, data: any) {
+    return await apiClient.updatePolice(id, data);
+  }
+
+  static async deletePolice(id: string) {
+    return await apiClient.deletePolice(id);
   }
 
   // Sinistres
@@ -121,53 +102,54 @@ export class DataService {
     return await apiClient.deleteUser(id);
   }
 
-  // Familles (local)
+  // Familles → backend /api/familles
   static async getFamilles() {
-    return localFamilles;
+    const res = await apiClient.getFamilles();
+    // Le backend retourne ApiResponse<List> donc apiClient extrait déjà .data
+    return Array.isArray(res) ? res : (res as any)?.data ?? [];
   }
 
   static async createFamille(data: any) {
-    const newFamille = { ...data, id: Date.now() };
-    localFamilles.push(newFamille);
-    return newFamille;
+    const res = await apiClient.createFamille(data);
+    return (res as any)?.data ?? res;
   }
 
   static async updateFamille(id: number, data: any) {
-    localFamilles = localFamilles.map(f => f.id === id ? { ...f, ...data } : f);
-    return data;
+    const res = await apiClient.updateFamille(id, data);
+    return (res as any)?.data ?? res;
   }
 
   static async deleteFamille(id: number) {
-    localFamilles = localFamilles.filter(f => f.id !== id);
-    return { success: true };
+    return apiClient.deleteFamille(id);
   }
 
   static async getFamilleById(id: number) {
-    return localFamilles.find(f => f.id === id) || null;
+    const res = await apiClient.getFamilleById(id);
+    return (res as any)?.data ?? res;
   }
 
-  // Groupes (local)
+  // Groupes → backend /api/groupes
   static async getGroupes() {
-    return localGroupes;
+    const res = await apiClient.getGroupes();
+    return Array.isArray(res) ? res : (res as any)?.data ?? [];
   }
 
   static async createGroupe(data: any) {
-    const newGroupe = { ...data, id: Date.now() };
-    localGroupes.push(newGroupe);
-    return newGroupe;
+    const res = await apiClient.createGroupe(data);
+    return (res as any)?.data ?? res;
   }
 
   static async updateGroupe(id: number, data: any) {
-    localGroupes = localGroupes.map(g => g.id === id ? { ...g, ...data } : g);
-    return data;
+    const res = await apiClient.updateGroupe(id, data);
+    return (res as any)?.data ?? res;
   }
 
   static async deleteGroupe(id: number) {
-    localGroupes = localGroupes.filter(g => g.id !== id);
-    return { success: true };
+    return apiClient.deleteGroupe(id);
   }
 
   static async getGroupeById(id: number) {
-    return localGroupes.find(g => g.id === id) || null;
+    const res = await apiClient.getGroupeById(id);
+    return (res as any)?.data ?? res;
   }
 }

@@ -118,7 +118,7 @@ export default function NewPrestatairePage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+              <Button type="submit" className="w-full">
                 Créer le prestataire
               </Button>
             </form>

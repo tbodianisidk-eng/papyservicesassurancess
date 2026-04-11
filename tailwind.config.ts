@@ -7,15 +7,24 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
+        "sm": "640px",
+        "md": "768px",
+        "lg": "1024px",
+        "xl": "1280px",
         "2xl": "1400px",
+        "3xl": "1600px",
+        "4xl": "1920px",
       },
     },
     extend: {
-      fontFamily: {
-        display: ["Space Grotesk", "sans-serif"],
-        body: ["Plus Jakarta Sans", "sans-serif"],
+      screens: {
+        "xs": "375px",
+        "2xs": "320px",
+        "3xl": "1600px",
+        "4xl": "1920px",
+        "5xl": "2560px",
       },
       colors: {
         border: "hsl(var(--border))",

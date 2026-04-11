@@ -148,7 +148,7 @@ export default function NewPrescriptionPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+              <Button type="submit" className="w-full">
                 Créer l'ordonnance
               </Button>
             </form>

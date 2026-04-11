@@ -46,6 +46,8 @@ public class AuthService {
             .fullName(request.getFullName())
             .role(User.UserRole.valueOf(request.getRole().toUpperCase()))
             .organization(request.getOrganization())
+            .telephone(request.getTelephone())
+            .adresse(request.getAdresse())
             .status(User.UserStatus.PENDING)
             .build();
 

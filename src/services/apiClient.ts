@@ -58,11 +58,15 @@ export class ApiClient {
     });
   }
 
-  async register(userData: { email: string; password: string; fullName: string; role: string; organization?: string }) {
+  async register(userData: { email: string; password: string; fullName: string; role: string; organization?: string; telephone?: string; adresse?: string }) {
     return this.request<{ user: any; token: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+  }
+
+  async getNotifications() {
+    return this.request<any[]>('/notifications');
   }
 
   async logout() {
@@ -70,7 +74,7 @@ export class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.request<{ user: any }>('/auth/me');
+    return this.request<any>('/auth/me');
   }
 
   // Users
@@ -116,6 +120,14 @@ export class ApiClient {
     return this.request('/polices', { method: 'POST', body: JSON.stringify(data) });
   }
 
+  async updatePolice(id: string, data: any) {
+    return this.request(`/polices/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async deletePolice(id: string) {
+    return this.request(`/polices/${id}`, { method: 'DELETE' });
+  }
+
   // Sinistres
   async getSinistres() {
     return this.request<{ sinistres: any[] }>('/sinistres');
@@ -154,6 +166,40 @@ export class ApiClient {
 
   async createPrescription(data: any) {
     return this.request('/prescriptions', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  // Familles
+  async getFamilles() {
+    return this.request<any[]>('/familles');
+  }
+  async getFamilleById(id: number) {
+    return this.request<any>(`/familles/${id}`);
+  }
+  async createFamille(data: any) {
+    return this.request<any>('/familles', { method: 'POST', body: JSON.stringify(data) });
+  }
+  async updateFamille(id: number, data: any) {
+    return this.request<any>(`/familles/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+  async deleteFamille(id: number) {
+    return this.request(`/familles/${id}`, { method: 'DELETE' });
+  }
+
+  // Groupes
+  async getGroupes() {
+    return this.request<any[]>('/groupes');
+  }
+  async getGroupeById(id: number) {
+    return this.request<any>(`/groupes/${id}`);
+  }
+  async createGroupe(data: any) {
+    return this.request<any>('/groupes', { method: 'POST', body: JSON.stringify(data) });
+  }
+  async updateGroupe(id: number, data: any) {
+    return this.request<any>(`/groupes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+  async deleteGroupe(id: number) {
+    return this.request(`/groupes/${id}`, { method: 'DELETE' });
   }
 }
 

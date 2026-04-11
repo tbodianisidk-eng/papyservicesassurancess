@@ -97,7 +97,7 @@ export default function AssureDetailsPage() {
                     <Label>Profession</Label>
                     <Input value={formData.profession} onChange={(e) => setFormData({...formData, profession: e.target.value})} />
                   </div>
-                  <Button onClick={handleUpdate} className="bg-gradient-to-r from-blue-600 to-purple-600">Enregistrer</Button>
+                  <Button onClick={handleUpdate}>Enregistrer</Button>
                 </div>
               ) : (
                 <>

@@ -1,139 +1,230 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
 import { UserMenu } from "./UserMenu";
-import { Bell, Search, User, Building2, Stethoscope } from "lucide-react";
+import { Search, User, Stethoscope } from "lucide-react";
 import { NotificationSystem } from "@/components/NotificationSystem";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataService } from "@/services/dataService";
+import { AIChatbot } from "@/components/AIChatbot";
 
 interface AppLayoutProps {
   children: ReactNode;
   title?: string;
 }
 
+interface SearchItem {
+  type: "Assuré" | "Prestataire";
+  label: string;
+  subtitle: string;
+  path: string;
+  icon: React.ReactNode;
+}
+
+// Cache partagé entre toutes les instances du layout pour éviter les re-fetches
+let _cachedAssures:      any[] | null = null;
+let _cachedPrestataires: any[] | null = null;
+
 export default function AppLayout({ children, title }: AppLayoutProps) {
   const navigate = useNavigate();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [searchOpen,  setSearchOpen]  = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [assures, setAssures] = useState<any[]>([]);
-  const [prestataires, setPrestataires] = useState<any[]>([]);
+  const [allItems,    setAllItems]    = useState<SearchItem[]>([]);
 
+  // Charger les données une seule fois (avec cache)
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const fetchedAssures = await DataService.getAssures();
-        setAssures(fetchedAssures);
-      } catch (error) {
-        console.error('AppLayout: impossible de charger les assurés', error);
-      }
+    let cancelled = false;
 
+    const load = async () => {
       try {
-        const fetchedPrestataires = await DataService.getPrestataires();
-        setPrestataires(fetchedPrestataires);
-      } catch (error) {
-        console.error('AppLayout: impossible de charger les prestataires', error);
+        if (!_cachedAssures) {
+          _cachedAssures = await DataService.getAssures();
+        }
+        if (!_cachedPrestataires) {
+          _cachedPrestataires = await DataService.getPrestataires();
+        }
+        if (!cancelled) {
+          const items: SearchItem[] = [
+            ...(_cachedAssures ?? []).map((a: any) => ({
+              type:     "Assuré" as const,
+              label:    [a.prenom, a.nom].filter(Boolean).join(' ') || '—',
+              subtitle: a.numero ?? '',
+              path:     `/assures/${a.id}`,
+              icon:     <User size={16} />,
+            })),
+            ...(_cachedPrestataires ?? []).map((p: any) => ({
+              type:     "Prestataire" as const,
+              label:    p.nom ?? '—',
+              subtitle: p.specialite ?? '',
+              path:     '/prestataires',
+              icon:     <Stethoscope size={16} />,
+            })),
+          ];
+          setAllItems(items);
+        }
+      } catch {
+        // Silencieux — la recherche reste vide
       }
     };
-    loadData();
+
+    load();
+    return () => { cancelled = true; };
   }, []);
 
-  const allSearchItems = [
-    ...assures.map(a => ({
-      type: "Assuré" as const,
-      label: `${a.prenom} ${a.nom}`,
-      subtitle: a.numero,
-      path: `/assures/${a.id}`,
-      icon: <User size={16} />
-    })),
-    ...prestataires.map(p => ({
-      type: "Prestataire" as const,
-      label: p.nom,
-      subtitle: p.specialite,
-      path: `/prestataires`,
-      icon: <Stethoscope size={16} />
-    }))
-  ];
+  // Raccourci clavier Ctrl+K / ⌘K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === 'Escape' && searchOpen) {
+        setSearchOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [searchOpen]);
 
-  const filteredItems = searchQuery
-    ? allSearchItems.filter(item =>
-        item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+  // Focus auto à l'ouverture
+  useEffect(() => {
+    if (searchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    } else {
+      setSearchQuery("");
+    }
+  }, [searchOpen]);
+
+  const filteredItems = searchQuery.trim()
+    ? allItems.filter(item => {
+        const q = searchQuery.toLowerCase();
+        return item.label.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q);
+      })
     : [];
 
-  const handleSelect = (path: string) => {
+  const handleSelect = useCallback((path: string) => {
     navigate(path);
     setSearchOpen(false);
-    setSearchQuery("");
-  };
+  }, [navigate]);
+
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-4 pl-12 lg:pl-0">
-            <img src="/logo1.png" alt="Logo" className="w-8 h-8 object-contain" />
-            {title && <h2 className="font-display text-lg font-semibold">{title}</h2>}
+
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        {/* ── Top bar ────────────────────────────────────────────────────── */}
+        <header className="h-12 sm:h-14 border-b border-border bg-card flex items-center shrink-0 px-3 sm:px-5 gap-2 sm:gap-3">
+
+          {/* Spacer for mobile menu button */}
+          <div className="w-9 h-9 md:hidden flex-shrink-0" />
+
+          {/* Title */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <img
+              src="/logo1.png"
+              alt="Logo"
+              className="w-7 h-7 object-contain flex-shrink-0 hidden sm:block"
+            />
+            {title && (
+              <h2 className="font-semibold text-sm sm:text-base truncate text-gray-900">
+                {title}
+              </h2>
+            )}
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* Search — button desktop */}
             <button
               onClick={() => setSearchOpen(true)}
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-sm hover:bg-muted/80 transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-sm hover:bg-muted/80 transition-colors"
             >
-              <Search size={16} />
-              <span>Rechercher...</span>
+              <Search size={15} />
+              <span className="hidden lg:inline text-sm">Rechercher…</span>
+              <kbd className="hidden lg:inline text-[10px] font-mono bg-background border border-border rounded px-1.5 py-0.5 ml-1">
+                Ctrl K
+              </kbd>
             </button>
+            {/* Search — icon mobile */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="sm:hidden p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+              aria-label="Rechercher"
+            >
+              <Search size={17} />
+            </button>
+
             <NotificationSystem />
             <UserMenu />
           </div>
         </header>
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
-          {children}
+
+        {/* ── Main content ───────────────────────────────────────────────── */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-3 sm:p-5 lg:p-7 xl:p-8 max-w-[1600px] mx-auto w-full">
+            {children}
+          </div>
         </main>
       </div>
 
+      {/* ── Search dialog ──────────────────────────────────────────────── */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Rechercher un assuré ou prestataire</DialogTitle>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-0">
+            <DialogTitle className="text-base">Recherche rapide</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Tapez un nom..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus
-            />
-            <div className="max-h-96 overflow-y-auto space-y-1">
-              {searchQuery && filteredItems.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelect(item.path)}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted transition-colors flex items-center gap-3"
-                >
-                  <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                    {item.icon}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.type} • {item.subtitle}</p>
-                  </div>
-                </button>
-              ))}
-              {searchQuery && filteredItems.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">Aucun résultat trouvé</p>
-              )}
-              {!searchQuery && (
-                <p className="text-center text-muted-foreground py-8">Commencez à taper pour rechercher...</p>
-              )}
+
+          <div className="px-4 pt-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Nom d'un assuré, prestataire…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 bg-muted border-0 focus-visible:ring-1"
+              />
             </div>
+          </div>
+
+          <div className="max-h-[380px] overflow-y-auto px-2 pb-3">
+            {!searchQuery.trim() && (
+              <p className="text-center text-muted-foreground text-sm py-10">
+                Tapez pour rechercher…
+              </p>
+            )}
+            {searchQuery.trim() && filteredItems.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-10">
+                Aucun résultat pour «&nbsp;{searchQuery}&nbsp;»
+              </p>
+            )}
+            {filteredItems.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSelect(item.path)}
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-muted transition-colors flex items-center gap-3 group"
+              >
+                <div className="p-2 bg-blue-100 rounded-lg text-blue-600 flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                  {item.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{item.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {item.type}{item.subtitle ? ` • ${item.subtitle}` : ''}
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── AI Chatbot ─────────────────────────────────────────────────── */}
+      <AIChatbot />
     </div>
   );
 }

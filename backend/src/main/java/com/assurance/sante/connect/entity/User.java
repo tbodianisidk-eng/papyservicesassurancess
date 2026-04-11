@@ -30,6 +30,10 @@ public class User {
 
     private String organization;
 
+    private String telephone;
+
+    private String adresse;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.PENDING;
