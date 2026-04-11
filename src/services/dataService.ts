@@ -1,112 +1,161 @@
-// Data service - connecté au backend Spring Boot API
+// Data service - connecté au backend Spring Boot, avec fallback données de démo
 import { apiClient } from './apiClient';
+import {
+  MOCK_ASSURES, MOCK_POLICES, MOCK_SINISTRES, MOCK_PRESTATAIRES,
+  MOCK_CONSULTATIONS, MOCK_PRESCRIPTIONS, MOCK_REMBOURSEMENTS,
+  MOCK_USERS, MOCK_CARTES,
+} from './mockData';
 
+async function withFallback<T>(apiCall: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await apiCall();
+  } catch {
+    return fallback;
+  }
+}
 
 export class DataService {
 
   // Assurés
   static async getAssures() {
-    const response = await apiClient.getAssures();
-    return response.assures;
+    return withFallback(async () => {
+      const r = await apiClient.getAssures();
+      return r.assures;
+    }, MOCK_ASSURES);
   }
 
   static async getAssureById(id: string) {
-    return await apiClient.getAssureById(id);
+    return withFallback(
+      () => apiClient.getAssureById(id),
+      MOCK_ASSURES.find(a => String(a.id) === id) ?? null
+    );
   }
 
   static async createAssure(data: any) {
-    return await apiClient.createAssure(data);
+    return apiClient.createAssure(data);
   }
 
   static async updateAssure(id: string, data: any) {
-    return await apiClient.updateAssure(id, data);
+    return apiClient.updateAssure(id, data);
   }
 
   static async deleteAssure(id: string) {
-    return await apiClient.deleteAssure(id);
+    return apiClient.deleteAssure(id);
   }
 
   // Polices
   static async getPolices() {
-    const response = await apiClient.getPolices();
-    return response.polices;
+    return withFallback(async () => {
+      const r = await apiClient.getPolices();
+      return r.polices;
+    }, MOCK_POLICES);
   }
 
   static async createPolice(data: any) {
-    return await apiClient.createPolice(data);
+    return apiClient.createPolice(data);
   }
 
   static async updatePolice(id: string, data: any) {
-    return await apiClient.updatePolice(id, data);
+    return apiClient.updatePolice(id, data);
   }
 
   static async deletePolice(id: string) {
-    return await apiClient.deletePolice(id);
+    return apiClient.deletePolice(id);
   }
 
   // Sinistres
   static async getSinistres() {
-    const response = await apiClient.getSinistres();
-    return response.sinistres;
+    return withFallback(async () => {
+      const r = await apiClient.getSinistres();
+      return r.sinistres;
+    }, MOCK_SINISTRES);
   }
 
   static async getSinistreById(id: string) {
-    return await apiClient.getSinistreById(id);
+    return withFallback(
+      () => apiClient.getSinistreById(id),
+      MOCK_SINISTRES.find(s => String(s.id) === id) ?? null
+    );
   }
 
   static async createSinistre(data: any) {
-    return await apiClient.createSinistre(data);
+    return apiClient.createSinistre(data);
   }
 
   // Prestataires
   static async getPrestataires() {
-    const response = await apiClient.getPrestataires();
-    return response.prestataires;
+    return withFallback(async () => {
+      const r = await apiClient.getPrestataires();
+      return r.prestataires;
+    }, MOCK_PRESTATAIRES);
   }
 
   static async createPrestataire(data: any) {
-    return await apiClient.createPrestataire(data);
+    return apiClient.createPrestataire(data);
   }
 
   // Consultations
   static async getConsultations() {
-    const response = await apiClient.getConsultations();
-    return response.consultations;
+    return withFallback(async () => {
+      const r = await apiClient.getConsultations();
+      return r.consultations;
+    }, MOCK_CONSULTATIONS);
   }
 
   static async createConsultation(data: any) {
-    return await apiClient.createConsultation(data);
+    return apiClient.createConsultation(data);
   }
 
   // Prescriptions
   static async getPrescriptions() {
-    const response = await apiClient.getPrescriptions();
-    return response.prescriptions;
+    return withFallback(async () => {
+      const r = await apiClient.getPrescriptions();
+      return r.prescriptions;
+    }, MOCK_PRESCRIPTIONS);
   }
 
   static async createPrescription(data: any) {
-    return await apiClient.createPrescription(data);
+    return apiClient.createPrescription(data);
+  }
+
+  // Remboursements
+  static async getRemboursements() {
+    return withFallback(async () => {
+      const r = await (apiClient as any).getRemboursements?.();
+      return r?.remboursements ?? r;
+    }, MOCK_REMBOURSEMENTS);
+  }
+
+  // Cartes
+  static async getCartes() {
+    return withFallback(async () => {
+      const r = await (apiClient as any).getCartes?.();
+      return r?.cartes ?? r;
+    }, MOCK_CARTES);
   }
 
   // Users
   static async getUsers() {
-    const response = await apiClient.getUsers();
-    return response.users;
+    return withFallback(async () => {
+      const r = await apiClient.getUsers();
+      return r.users;
+    }, MOCK_USERS);
   }
 
   static async updateUser(id: string, data: any) {
-    return await apiClient.updateUser(id, data);
+    return apiClient.updateUser(id, data);
   }
 
   static async deleteUser(id: string) {
-    return await apiClient.deleteUser(id);
+    return apiClient.deleteUser(id);
   }
 
-  // Familles → backend /api/familles
+  // Familles
   static async getFamilles() {
-    const res = await apiClient.getFamilles();
-    // Le backend retourne ApiResponse<List> donc apiClient extrait déjà .data
-    return Array.isArray(res) ? res : (res as any)?.data ?? [];
+    return withFallback(async () => {
+      const res = await apiClient.getFamilles();
+      return Array.isArray(res) ? res : (res as any)?.data ?? [];
+    }, []);
   }
 
   static async createFamille(data: any) {
@@ -128,10 +177,12 @@ export class DataService {
     return (res as any)?.data ?? res;
   }
 
-  // Groupes → backend /api/groupes
+  // Groupes
   static async getGroupes() {
-    const res = await apiClient.getGroupes();
-    return Array.isArray(res) ? res : (res as any)?.data ?? [];
+    return withFallback(async () => {
+      const res = await apiClient.getGroupes();
+      return Array.isArray(res) ? res : (res as any)?.data ?? [];
+    }, []);
   }
 
   static async createGroupe(data: any) {

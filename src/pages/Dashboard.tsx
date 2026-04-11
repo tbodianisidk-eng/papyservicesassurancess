@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/context/AuthContext';
+import { MOCK_DASHBOARD } from '@/services/mockData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,10 @@ export default function Dashboard() {
         const data = (json?.data ?? json) as DashboardStats;
         setStats({ ...EMPTY, ...data });
       })
-      .catch(() => setApiError(true))
+      .catch(() => {
+        // Backend indisponible → données de démonstration
+        setStats({ ...EMPTY, ...MOCK_DASHBOARD });
+      })
       .finally(() => {
         clearTimeout(tid);
         setLoading(false);
