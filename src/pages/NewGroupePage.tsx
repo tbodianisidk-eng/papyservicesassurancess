@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -8,69 +8,161 @@ import { Card } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, X, RefreshCw, ChevronDown, ChevronUp, Briefcase } from "lucide-react";
+import {
+  ArrowLeft, RefreshCw, ChevronDown, ChevronUp,
+  Upload, Download, X, FileSpreadsheet, AlertCircle,
+  Users, CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { DataService } from "@/services/dataService";
-import { PhotoUpload } from "@/components/PhotoUpload";
+import * as XLSX from "xlsx";
 import {
   GARANTIES_CNART, REAJUSTEMENT_SP,
-  PRIME_ADULTE, PRIME_ADULTE_AGE,
+  PRIME_ENFANT, PRIME_ADULTE, PRIME_ADULTE_AGE,
   ACCESSOIRES, TAUX_TAXE,
-  type TypeAssure,
+  type TypeAssure, typeFromDate,
+  TYPE_COLORS, TYPE_LABELS, TYPE_PRICES,
 } from "./NewFamillePage";
 
-// ─── Types Groupe ─────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface MembreFamille {
-  nom:  string;
-  lien: string;
-  type: TypeAssure;
+export interface MembrePopulation {
+  numero:        number;
+  nom:           string;
+  dateNaissance: string;
+  sexe:          string;
+  pieceIdentite: string;
+  lien:          string;
+  dateAdhesion:  string;
+  salaire?:      string;
+  garantie:      string;
+  type:          TypeAssure;  // auto-calculé depuis dateNaissance
 }
 
-export interface Employe {
-  id:         string;
-  nom:        string;
-  poste:      string;
-  matricule:  string;
-  type:       TypeAssure;
-  photo?:     string;       // base64
-  famille:    MembreFamille[];
-}
+// ─── Calcul décompte ──────────────────────────────────────────────────────────
 
-// ─── Calcul décompte groupe ───────────────────────────────────────────────────
-
-export function calcDecompteGroupe(employes: Employe[]) {
-  let nbAdulte = 0;
-  let nbAdulteAge = 0;
-  for (const emp of employes) {
-    if (emp.type === "adulte") nbAdulte++; else nbAdulteAge++;
-    for (const m of emp.famille) {
-      if (m.type === "adulte") nbAdulte++; else nbAdulteAge++;
-    }
-  }
-  const primeAdultes    = nbAdulte    * PRIME_ADULTE;
-  const primeAdultesAge = nbAdulteAge * PRIME_ADULTE_AGE;
-  const primeNette      = primeAdultes + primeAdultesAge;
+export function calcDecomptePopulation(membres: MembrePopulation[]) {
+  const nb: Record<TypeAssure, number> = { enfant: 0, adulte: 0, adulte_age: 0 };
+  for (const m of membres) nb[m.type]++;
+  const primeEnfants    = nb.enfant     * PRIME_ENFANT;
+  const primeAdultes    = nb.adulte     * PRIME_ADULTE;
+  const primeAdultesAge = nb.adulte_age * PRIME_ADULTE_AGE;
+  const primeNette      = primeEnfants + primeAdultes + primeAdultesAge;
   const taxes           = Math.round(primeNette * TAUX_TAXE);
   const total           = primeNette + ACCESSOIRES + taxes;
-  return { nbAdulte, nbAdulteAge, primeAdultes, primeAdultesAge, primeNette, accessoires: ACCESSOIRES, taxes, total };
+  return { nb, primeEnfants, primeAdultes, primeAdultesAge, primeNette, accessoires: ACCESSOIRES, taxes, total };
+}
+
+// ─── Colonnes du modèle Excel ─────────────────────────────────────────────────
+
+const TEMPLATE_HEADERS = [
+  "N°",
+  "Nom et Prénom",
+  "Date de naissance",
+  "Sexe",
+  "N° pièce d'identité",
+  "Lien avec l'adhérent principal",
+  "Date d'adhésion",
+  "Salaire (optionnel)",
+  "Garantie",
+];
+
+// ─── Télécharger le modèle ────────────────────────────────────────────────────
+
+function downloadTemplate() {
+  const example = [
+    1, "Mamadou Diallo", "1985-03-12", "M", "SN-1234567890",
+    "Adhérent principal", "2024-01-01", "500000", "Standard",
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, example]);
+  ws["!cols"] = [
+    { wch: 5 }, { wch: 25 }, { wch: 18 }, { wch: 8 },
+    { wch: 22 }, { wch: 28 }, { wch: 16 }, { wch: 18 }, { wch: 14 },
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Population");
+  XLSX.writeFile(wb, "modele_population_groupe.xlsx");
+}
+
+// ─── Parser le fichier Excel ──────────────────────────────────────────────────
+
+function parseExcel(file: File): Promise<MembrePopulation[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target!.result as ArrayBuffer);
+        const wb   = XLSX.read(data, { type: "array", cellDates: true });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+        if (rows.length < 2) {
+          reject(new Error("Le fichier ne contient pas de données")); return;
+        }
+
+        const membres: MembrePopulation[] = [];
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || !row[1]) continue;  // ignorer lignes vides
+
+          // Normaliser la date de naissance
+          let dateNaissance = "";
+          const rawDate = row[2];
+          if (rawDate instanceof Date) {
+            dateNaissance = rawDate.toISOString().split("T")[0];
+          } else if (typeof rawDate === "string" && rawDate.trim()) {
+            const s = rawDate.trim().replace(/\//g, "-");
+            const parts = s.split("-");
+            if (parts.length === 3 && parts[0].length <= 2) {
+              // dd-mm-yyyy → yyyy-mm-dd
+              dateNaissance = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+            } else {
+              dateNaissance = s;
+            }
+          } else if (typeof rawDate === "number") {
+            // Numéro série Excel
+            const d = XLSX.SSF.parse_date_code(rawDate);
+            dateNaissance = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+          }
+
+          membres.push({
+            numero:        Number(row[0]) || i,
+            nom:           String(row[1] || "").trim(),
+            dateNaissance,
+            sexe:          String(row[3] || "").trim(),
+            pieceIdentite: String(row[4] || "").trim(),
+            lien:          String(row[5] || "").trim(),
+            dateAdhesion:  String(row[6] || "").trim(),
+            salaire:       row[7] ? String(row[7]) : undefined,
+            garantie:      String(row[8] || "Standard").trim(),
+            type:          typeFromDate(dateNaissance),
+          });
+        }
+        resolve(membres);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 const DUREES = ["1", "2", "3"].map(v => ({ value: v, label: `${v} an${+v > 1 ? "s" : ""}` }));
 
-function newEmploye(): Employe {
-  return { id: crypto.randomUUID(), nom: "", poste: "", matricule: "", type: "adulte", famille: [] };
-}
-
 // ─── Composant ────────────────────────────────────────────────────────────────
 
 export default function NewGroupePage() {
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
   const [searchParams] = useSearchParams();
-  const [editingId, setEditingId]         = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingId,     setEditingId]     = useState<number | null>(null);
   const [showGaranties, setShowGaranties] = useState(false);
-  const [showReajust, setShowReajust]     = useState(false);
-  const [expandedEmp, setExpandedEmp]     = useState<string | null>(null);
+  const [showReajust,   setShowReajust]   = useState(false);
+  const [isDragging,    setIsDragging]    = useState(false);
+  const [isLoading,     setIsLoading]     = useState(false);
+  const [fileName,      setFileName]      = useState<string>("");
 
   const [formData, setFormData] = useState({
     entreprise:    "",
@@ -79,9 +171,9 @@ export default function NewGroupePage() {
     dureeGarantie: "1",
     echeanceAuto:  true,
   });
-  const [employes, setEmployes] = useState<Employe[]>([newEmploye()]);
+  const [membres, setMembres] = useState<MembrePopulation[]>([]);
 
-  // Date fin calculée
+  // Date de fin calculée
   const dateFin = useMemo(() => {
     if (!formData.dateDebut) return "";
     const d = new Date(formData.dateDebut);
@@ -90,30 +182,10 @@ export default function NewGroupePage() {
     return d.toLocaleDateString("fr-FR");
   }, [formData.dateDebut, formData.dureeGarantie]);
 
-  const decompte = useMemo(() => calcDecompteGroupe(employes), [employes]);
+  const decompte = useMemo(() => calcDecomptePopulation(membres), [membres]);
+  const duree    = Number(formData.dureeGarantie);
 
-  // ── CRUD employés ──
-  const addEmploye = () => setEmployes(prev => [...prev, newEmploye()]);
-  const removeEmploye = (id: string) => setEmployes(prev => prev.filter(e => e.id !== id));
-  const updateEmploye = (id: string, field: keyof Employe, value: any) =>
-    setEmployes(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
-
-  // ── CRUD famille d'un employé ──
-  const addMembre = (empId: string) =>
-    setEmployes(prev => prev.map(e =>
-      e.id === empId ? { ...e, famille: [...e.famille, { nom: "", lien: "", type: "adulte" as TypeAssure }] } : e
-    ));
-  const removeMembre = (empId: string, idx: number) =>
-    setEmployes(prev => prev.map(e =>
-      e.id === empId ? { ...e, famille: e.famille.filter((_, i) => i !== idx) } : e
-    ));
-  const updateMembre = (empId: string, idx: number, field: keyof MembreFamille, value: string) =>
-    setEmployes(prev => prev.map(e =>
-      e.id === empId
-        ? { ...e, famille: e.famille.map((m, i) => i === idx ? { ...m, [field]: value } : m) }
-        : e
-    ));
-
+  // ── Charger un groupe existant ──
   useEffect(() => {
     const idParam = Number(searchParams.get("id"));
     if (!idParam) return;
@@ -128,26 +200,72 @@ export default function NewGroupePage() {
           dureeGarantie: groupe.dureeGarantie || "1",
           echeanceAuto:  groupe.echeanceAuto  ?? true,
         });
-        if (groupe.employesDetail?.length) setEmployes(groupe.employesDetail);
+        if (groupe.membresDetail?.length) {
+          setMembres(groupe.membresDetail);
+          setFileName("population_chargée.xlsx");
+        }
       })
       .catch(() => toast.error("Erreur lors du chargement"));
   }, [searchParams]);
 
+  // ── Gestion du fichier ──
+  const handleFile = async (file: File) => {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      toast.error("Veuillez importer un fichier Excel (.xlsx ou .xls)");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const parsed = await parseExcel(file);
+      if (parsed.length === 0) {
+        toast.error("Aucune donnée trouvée dans le fichier");
+      } else {
+        setMembres(parsed);
+        setFileName(file.name);
+        toast.success(`${parsed.length} membre${parsed.length > 1 ? "s" : ""} importé${parsed.length > 1 ? "s" : ""} avec succès`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erreur lors de la lecture du fichier");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    e.target.value = "";  // reset so same file can be re-selected
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const removeMembre = (idx: number) =>
+    setMembres(prev => prev.filter((_, i) => i !== idx));
+
+  // ── Soumission ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const totalAssures = employes.reduce((s, emp) => s + 1 + emp.famille.length, 0);
+    if (membres.length === 0) {
+      toast.error("Veuillez importer la liste des membres via Excel");
+      return;
+    }
     const payload = {
-      entreprise:     formData.entreprise,
-      secteur:        formData.secteur,
-      employes:       employes.length,
-      assures:        totalAssures,
-      debut:          formData.dateDebut,
-      dureeGarantie:  formData.dureeGarantie,
-      echeanceAuto:   formData.echeanceAuto,
-      prime:          (decompte.total * Number(formData.dureeGarantie)).toString(),
-      primeNette:     (decompte.primeNette * Number(formData.dureeGarantie)).toString(),
-      taxes:          (decompte.taxes * Number(formData.dureeGarantie)).toString(),
-      employesDetail: employes,
+      entreprise:    formData.entreprise,
+      secteur:       formData.secteur,
+      employes:      membres.length,
+      assures:       membres.length,
+      debut:         formData.dateDebut,
+      dureeGarantie: formData.dureeGarantie,
+      echeanceAuto:  formData.echeanceAuto,
+      prime:         (decompte.total * duree).toString(),
+      primeNette:    (decompte.primeNette * duree).toString(),
+      taxes:         (decompte.taxes * duree).toString(),
+      membresDetail: membres,
     };
     try {
       if (editingId) {
@@ -163,14 +281,11 @@ export default function NewGroupePage() {
     }
   };
 
-  const duree = Number(formData.dureeGarantie);
-
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6 pb-10">
         <Button variant="ghost" onClick={() => navigate("/maladie-groupe")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour
+          <ArrowLeft className="w-4 h-4 mr-2" /> Retour
         </Button>
 
         <Card className="p-6">
@@ -188,7 +303,7 @@ export default function NewGroupePage() {
               <h3 className="font-semibold text-base border-b pb-2">Entreprise</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>Nom de l'entreprise</Label>
+                  <Label>Nom de l'entreprise *</Label>
                   <Input
                     required
                     value={formData.entreprise}
@@ -197,7 +312,7 @@ export default function NewGroupePage() {
                   />
                 </div>
                 <div>
-                  <Label>Secteur d'activité</Label>
+                  <Label>Secteur d'activité *</Label>
                   <Input
                     required
                     value={formData.secteur}
@@ -227,7 +342,7 @@ export default function NewGroupePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Date de début</Label>
+                  <Label>Date de début *</Label>
                   <Input
                     required
                     type="date"
@@ -271,220 +386,201 @@ export default function NewGroupePage() {
               </div>
             </section>
 
-            {/* ── Liste des employés ── */}
+            {/* ── Import Excel ── */}
             <section className="space-y-4">
               <div className="flex justify-between items-center border-b pb-2">
-                <h3 className="font-semibold text-base">
-                  Employés & familles{" "}
-                  <span className="text-sm text-muted-foreground font-normal">
-                    ({employes.length} employé{employes.length > 1 ? "s" : ""} ·{" "}
-                    {employes.reduce((s, e) => s + 1 + e.famille.length, 0)} assuré{employes.reduce((s, e) => s + 1 + e.famille.length, 0) > 1 ? "s" : ""})
-                  </span>
+                <h3 className="font-semibold text-base flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  Population à assurer
+                  {membres.length > 0 && (
+                    <span className="text-sm text-muted-foreground font-normal">
+                      ({membres.length} membre{membres.length > 1 ? "s" : ""})
+                    </span>
+                  )}
                 </h3>
-                <Button type="button" variant="outline" size="sm" onClick={addEmploye}>
-                  <Plus className="w-4 h-4 mr-2" /> Ajouter employé
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadTemplate}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger le modèle
                 </Button>
               </div>
 
-              {employes.map((emp, empIdx) => {
-                const isOpen = expandedEmp === emp.id;
-                return (
-                  <Card key={emp.id} className="border-2 border-blue-100 overflow-hidden">
-                    {/* En-tête employé */}
-                    <div className="p-4 bg-blue-50/60 flex items-center gap-3">
-                      {/* Photo */}
-                      <PhotoUpload
-                        photo={emp.photo}
-                        onChange={b64 => updateEmploye(emp.id, "photo", b64)}
-                        size="md"
-                        rounded="full"
-                        label="Photo"
-                      />
+              {/* Explication */}
+              <div className="flex gap-3 p-3 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-800">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Comment procéder ?</p>
+                  <ol className="mt-1 space-y-0.5 text-xs list-decimal list-inside text-blue-700">
+                    <li>Téléchargez le modèle Excel ci-dessus</li>
+                    <li>Remplissez-le avec la liste des assurés fournie par l'entreprise</li>
+                    <li>Importez le fichier complété ci-dessous</li>
+                  </ol>
+                  <p className="mt-1 text-xs text-blue-600">
+                    Colonnes : N° · Nom et Prénom · Date de naissance · Sexe · N° pièce d'identité · Lien avec l'adhérent principal · Date d'adhésion · Salaire (optionnel) · Garantie
+                  </p>
+                </div>
+              </div>
 
-                      {/* Champs */}
-                      <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div>
-                          <Label className="text-xs">Matricule</Label>
-                          <Input
-                            value={emp.matricule}
-                            onChange={e => updateEmploye(emp.id, "matricule", e.target.value)}
-                            placeholder="MAT-001"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <Label className="text-xs">Nom complet *</Label>
-                          <Input
-                            required
-                            value={emp.nom}
-                            onChange={e => updateEmploye(emp.id, "nom", e.target.value)}
-                            placeholder="Prénom NOM"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Poste</Label>
-                          <Input
-                            value={emp.poste}
-                            onChange={e => updateEmploye(emp.id, "poste", e.target.value)}
-                            placeholder="Directeur…"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Catégorie</Label>
-                          <Select
-                            value={emp.type}
-                            onValueChange={v => updateEmploye(emp.id, "type", v as TypeAssure)}
-                          >
-                            <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="adulte">Adulte · {PRIME_ADULTE.toLocaleString()} FCFA</SelectItem>
-                              <SelectItem value="adulte_age">Adulte âgé · {PRIME_ADULTE_AGE.toLocaleString()} FCFA</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
+              {/* Zone de dépôt */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileInput}
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? "border-blue-500 bg-blue-50"
+                    : membres.length > 0
+                    ? "border-green-400 bg-green-50"
+                    : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
+                }`}
+              >
+                {isLoading ? (
+                  <div className="flex flex-col items-center gap-2 text-blue-600">
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-medium">Lecture du fichier…</p>
+                  </div>
+                ) : membres.length > 0 ? (
+                  <div className="flex flex-col items-center gap-2 text-green-700">
+                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                    <p className="text-sm font-semibold">{fileName}</p>
+                    <p className="text-xs text-green-600">
+                      {membres.length} membre{membres.length > 1 ? "s" : ""} importé{membres.length > 1 ? "s" : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Cliquer pour remplacer le fichier</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-gray-500">
+                    <FileSpreadsheet className="w-10 h-10 text-gray-400" />
+                    <p className="text-sm font-semibold">Glisser-déposer votre fichier Excel ici</p>
+                    <p className="text-xs text-muted-foreground">ou cliquer pour sélectionner</p>
+                    <p className="text-xs text-muted-foreground mt-1">Formats acceptés : .xlsx, .xls</p>
+                  </div>
+                )}
+              </div>
 
-                      <div className="flex flex-col gap-1 shrink-0">
-                        {/* Toggle famille */}
-                        <button
-                          type="button"
-                          onClick={() => setExpandedEmp(isOpen ? null : emp.id)}
-                          className="text-xs text-blue-600 flex items-center gap-1 hover:underline whitespace-nowrap"
-                        >
-                          {isOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                          Famille ({emp.famille.length})
-                        </button>
-                        {employes.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeEmploye(emp.id)}
-                            className="text-xs text-red-500 hover:underline flex items-center gap-1"
-                          >
-                            <X className="w-3 h-3" /> Retirer
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Famille de l'employé */}
-                    {isOpen && (
-                      <div className="p-4 border-t space-y-3">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-medium text-muted-foreground">
-                            Famille de <span className="text-foreground">{emp.nom || `Employé ${empIdx + 1}`}</span>
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => addMembre(emp.id)}
-                          >
-                            <Plus className="w-3 h-3 mr-1" /> Ajouter membre
-                          </Button>
-                        </div>
-                        {emp.famille.length === 0 && (
-                          <p className="text-xs text-muted-foreground italic">Aucun membre de famille — cliquer sur "Ajouter membre"</p>
-                        )}
-                        {emp.famille.map((m, mIdx) => (
-                          <div key={mIdx} className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
-                            <Input
-                              required
-                              placeholder="Nom du membre"
-                              value={m.nom}
-                              onChange={e => updateMembre(emp.id, mIdx, "nom", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                            <Input
-                              required
-                              placeholder="Lien (Épouse, Fils…)"
-                              value={m.lien}
-                              onChange={e => updateMembre(emp.id, mIdx, "lien", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                            <Select
-                              value={m.type}
-                              onValueChange={v => updateMembre(emp.id, mIdx, "type", v)}
-                            >
-                              <SelectTrigger className="h-8 text-sm w-32"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="adulte">Adulte</SelectItem>
-                                <SelectItem value="adulte_age">Adulte âgé</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => removeMembre(emp.id, mIdx)}
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
+              {/* Tableau de la population importée */}
+              {membres.length > 0 && (
+                <div className="rounded-xl border overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2.5 flex justify-between items-center border-b">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Liste des membres ({membres.length})
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => { setMembres([]); setFileName(""); }}
+                    >
+                      <X className="w-3 h-3 mr-1" /> Effacer tout
+                    </Button>
+                  </div>
+                  <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-white border-b z-10">
+                        <tr>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium w-8">N°</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium min-w-[160px]">Nom et Prénom</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium w-28">Date naiss.</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium w-12">Sexe</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium min-w-[120px]">Pièce d'identité</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium min-w-[140px]">Lien</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium w-24">Catégorie</th>
+                          <th className="text-left px-3 py-2 text-muted-foreground font-medium w-24">Garantie</th>
+                          <th className="w-8 px-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {membres.map((m, idx) => (
+                          <tr key={idx} className={`border-t ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
+                            <td className="px-3 py-2 text-muted-foreground">{m.numero}</td>
+                            <td className="px-3 py-2 font-medium">{m.nom}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{m.dateNaissance || "—"}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{m.sexe || "—"}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{m.pieceIdentite || "—"}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{m.lien || "—"}</td>
+                            <td className="px-3 py-2">
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${TYPE_COLORS[m.type]}`}>
+                                {m.type === "enfant" ? "Enfant" : m.type === "adulte" ? "Adulte" : "Âgé"}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-muted-foreground">{m.garantie}</td>
+                            <td className="px-2 py-2">
+                              <button
+                                type="button"
+                                onClick={() => removeMembre(idx)}
+                                className="p-0.5 text-red-400 hover:text-red-600 rounded"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
                         ))}
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* ── Décompte ── */}
-            <section className="space-y-3">
-              <h3 className="font-semibold text-base border-b pb-2">Décompte de la prime</h3>
+            {membres.length > 0 && (
+              <section className="space-y-3">
+                <h3 className="font-semibold text-base border-b pb-2">Décompte de la prime</h3>
 
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-gray-50 border text-center">
-                  <p className="text-xs text-muted-foreground">Employés</p>
-                  <p className="font-bold text-lg">{employes.length}</p>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  {(["enfant", "adulte", "adulte_age"] as TypeAssure[]).map(t => (
+                    <div key={t} className={`p-3 rounded-lg border ${TYPE_COLORS[t]}`}>
+                      <p className="text-xs opacity-80">
+                        {t === "enfant" ? "Enfant(s)" : t === "adulte" ? "Adulte(s)" : "Âgé(s)"}
+                      </p>
+                      <p className="font-bold text-lg">{decompte.nb[t]}</p>
+                      <p className="text-[10px] opacity-70">{TYPE_PRICES[t].toLocaleString("fr-FR")} FCFA/pers</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-center">
-                  <p className="text-xs text-muted-foreground">Adultes</p>
-                  <p className="font-bold text-lg">{decompte.nbAdulte}</p>
-                  <p className="text-xs text-blue-700">{PRIME_ADULTE.toLocaleString()} FCFA</p>
-                </div>
-                <div className="p-3 rounded-lg bg-purple-50 border border-purple-200 text-center">
-                  <p className="text-xs text-muted-foreground">Adultes âgés</p>
-                  <p className="font-bold text-lg">{decompte.nbAdulteAge}</p>
-                  <p className="text-xs text-purple-700">{PRIME_ADULTE_AGE.toLocaleString()} FCFA</p>
-                </div>
-              </div>
 
-              <div className="rounded-xl border overflow-hidden text-sm">
-                <div className="bg-gray-50 px-4 py-2 font-semibold text-xs text-muted-foreground uppercase tracking-wide">
-                  Décompte annuel × {duree} an{duree > 1 ? "s" : ""}
-                </div>
-                {[
-                  {
-                    label: `Prime nette adulte${decompte.nbAdulte > 1 ? "s" : ""} (${PRIME_ADULTE.toLocaleString()} × ${decompte.nbAdulte})`,
-                    value: decompte.primeAdultes, show: decompte.nbAdulte > 0,
-                  },
-                  {
-                    label: `Prime nette adulte${decompte.nbAdulteAge > 1 ? "s" : ""} âgé${decompte.nbAdulteAge > 1 ? "s" : ""} (${PRIME_ADULTE_AGE.toLocaleString()} × ${decompte.nbAdulteAge})`,
-                    value: decompte.primeAdultesAge, show: decompte.nbAdulteAge > 0,
-                  },
-                  { label: "Prime nette totale",           value: decompte.primeNette,  show: true, bold: true },
-                  { label: "Accessoires",                  value: decompte.accessoires, show: true },
-                  { label: `Taxes (${(TAUX_TAXE * 100).toFixed(1)} %)`, value: decompte.taxes, show: true },
-                ].filter(r => r.show).map((row, i) => (
-                  <div key={i} className={`flex justify-between items-center px-4 py-2.5 border-t ${row.bold ? "bg-blue-50 font-semibold" : ""}`}>
-                    <span>{row.label}</span>
-                    <span className={`font-mono text-sm ${row.bold ? "text-blue-700" : ""}`}>
-                      {(row.value * duree).toLocaleString("fr-FR")} FCFA
+                <div className="rounded-xl border overflow-hidden text-sm">
+                  <div className="bg-gray-50 px-4 py-2 font-semibold text-xs text-muted-foreground uppercase tracking-wide">
+                    Décompte annuel × {duree} an{duree > 1 ? "s" : ""}
+                  </div>
+                  {[
+                    { label: `Enfants (${PRIME_ENFANT.toLocaleString()} × ${decompte.nb.enfant})`,             value: decompte.primeEnfants,    show: decompte.nb.enfant > 0 },
+                    { label: `Adultes (${PRIME_ADULTE.toLocaleString()} × ${decompte.nb.adulte})`,             value: decompte.primeAdultes,    show: decompte.nb.adulte > 0 },
+                    { label: `Personnes âgées (${PRIME_ADULTE_AGE.toLocaleString()} × ${decompte.nb.adulte_age})`, value: decompte.primeAdultesAge, show: decompte.nb.adulte_age > 0 },
+                    { label: "Prime nette totale", value: decompte.primeNette,  show: true, bold: true },
+                    { label: "Accessoires",         value: decompte.accessoires, show: true },
+                    { label: `Taxes (${(TAUX_TAXE * 100).toFixed(1)} %)`, value: decompte.taxes, show: true },
+                  ].filter(r => r.show).map((row, i) => (
+                    <div key={i} className={`flex justify-between items-center px-4 py-2.5 border-t ${(row as any).bold ? "bg-blue-50 font-semibold" : ""}`}>
+                      <span className="text-sm">{row.label}</span>
+                      <span className={`font-mono text-sm ${(row as any).bold ? "text-blue-700" : ""}`}>
+                        {(row.value * duree).toLocaleString("fr-FR")} FCFA
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center px-4 py-3 border-t bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                    <span className="font-bold text-base">TOTAL À PAYER</span>
+                    <span className="font-bold text-xl font-mono">
+                      {(decompte.total * duree).toLocaleString("fr-FR")} FCFA
                     </span>
                   </div>
-                ))}
-                <div className="flex justify-between items-center px-4 py-3 border-t bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                  <span className="font-bold text-base">TOTAL À PAYER</span>
-                  <span className="font-bold text-xl font-mono">
-                    {(decompte.total * duree).toLocaleString("fr-FR")} FCFA
-                  </span>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* ── Tableau des garanties ── */}
             <section>
@@ -566,8 +662,13 @@ export default function NewGroupePage() {
               )}
             </section>
 
-            <Button type="submit" className="w-full py-6 text-base">
+            <Button
+              type="submit"
+              className="w-full py-6 text-base"
+              disabled={membres.length === 0}
+            >
               {editingId ? "Modifier le groupe" : "Créer le groupe"}
+              {membres.length > 0 && ` (${membres.length} membre${membres.length > 1 ? "s" : ""})`}
             </Button>
           </form>
         </Card>

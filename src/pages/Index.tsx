@@ -98,11 +98,11 @@ const Index = () => {
               <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient} opacity-85`}></div>
               <div className="absolute inset-0 flex items-center justify-center text-white">
                 <div className="container mx-auto px-4 text-center">
-                  <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in drop-shadow-lg">{slide.title}</h1>
-                  <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto drop-shadow-md">{slide.subtitle}</p>
-                  <div className="flex gap-4 justify-center">
-                    <Button size="lg" onClick={() => navigate('/login')} className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 btn-ripple">
-                      Démarrer maintenant <ArrowRight className="ml-2 w-5 h-5" />
+                  <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 animate-fade-in drop-shadow-lg">{slide.title}</h1>
+                  <p className="text-base sm:text-xl md:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto drop-shadow-md px-2">{slide.subtitle}</p>
+                  <div className="flex justify-center px-4">
+                    <Button onClick={() => navigate('/login')} className="bg-white text-blue-600 hover:bg-gray-100 text-sm sm:text-base px-5 sm:px-8 py-2.5 sm:py-3 h-auto">
+                      Démarrer maintenant <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </div>
                 </div>

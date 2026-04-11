@@ -8,170 +8,139 @@ import { Card } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, X, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, X, RefreshCw, ChevronDown, ChevronUp, User, Users } from "lucide-react";
 import { toast } from "sonner";
 import { DataService } from "@/services/dataService";
 import { PhotoUpload } from "@/components/PhotoUpload";
 
 // ─── Constantes CNART ─────────────────────────────────────────────────────────
 
-export const PRIME_ADULTE     = 475_000;   // FCFA
-export const PRIME_ADULTE_AGE = 712_500;   // FCFA
+export const PRIME_ENFANT     = 237_500;   // FCFA  (< 18 ans)
+export const PRIME_ADULTE     = 475_000;   // FCFA  (18 – 59 ans)
+export const PRIME_ADULTE_AGE = 712_500;   // FCFA  (60 ans et +)
 export const ACCESSOIRES      = 100_000;   // FCFA (fixe)
 export const TAUX_TAXE        = 0.106;     // 10,6 %
 
-export type TypeAssure = "adulte" | "adulte_age";
+export type TypeAssure = "enfant" | "adulte" | "adulte_age";
+
+export const TYPE_LABELS: Record<TypeAssure, string> = {
+  enfant:     "Enfant (< 18 ans)",
+  adulte:     "Adulte (18 – 59 ans)",
+  adulte_age: "Personne âgée (60 ans et +)",
+};
+
+export const TYPE_PRICES: Record<TypeAssure, number> = {
+  enfant:     PRIME_ENFANT,
+  adulte:     PRIME_ADULTE,
+  adulte_age: PRIME_ADULTE_AGE,
+};
+
+export const TYPE_COLORS: Record<TypeAssure, string> = {
+  enfant:     "bg-green-50 border-green-200 text-green-700",
+  adulte:     "bg-blue-50 border-blue-200 text-blue-700",
+  adulte_age: "bg-purple-50 border-purple-200 text-purple-700",
+};
+
+/** Détermine la catégorie automatiquement depuis la date de naissance */
+export function typeFromDate(dateNaissance: string): TypeAssure {
+  if (!dateNaissance) return "adulte";
+  const age = Math.floor((Date.now() - new Date(dateNaissance).getTime()) / (365.25 * 86_400_000));
+  if (age < 18)  return "enfant";
+  if (age >= 60) return "adulte_age";
+  return "adulte";
+}
 
 export interface Beneficiaire {
-  nom:  string;
-  lien: string;
-  type: TypeAssure;
+  nom:           string;
+  lien:          string;
+  type:          TypeAssure;
+  dateNaissance: string;
+  lieuNaissance: string;
+  email:         string;
+  telephone:     string;
 }
 
 // ─── Tableau des garanties (source : CNART Assurances) ────────────────────────
 
 export const GARANTIES_CNART = [
-  {
-    categorie: "Honoraires médicaux",
-    actes: "Consultations, visites, actes de pratique médicale courante, petite chirurgie",
-    taux: "80 %",
-    plafond: "Selon barème du Syndicat des Médecins Privés du Sénégal",
-  },
-  {
-    categorie: "Pharmacie",
-    actes: "Produits pharmaceutiques remboursés",
-    taux: "80 %",
-    plafond: "—",
-  },
-  {
-    categorie: "Auxiliaires médicaux",
-    actes: "Soins infirmiers, Kinésithérapie / Rééducation, Traitements psychiatriques",
-    taux: "80 %",
-    plafond: "Soumis à entente préalable",
-  },
-  {
-    categorie: "Analyses biologiques",
-    actes: "Analyses",
-    taux: "80 %",
-    plafond: "—",
-  },
-  {
-    categorie: "Imagerie médicale",
-    actes: "Radio, Scanner et IRM en externe",
-    taux: "80 %",
-    plafond: "—",
-  },
-  {
-    categorie: "Soins dentaires",
-    actes: "Soins et prothèses dentaires",
-    taux: "80 %",
-    plafond: "250 000 FCFA / bénéficiaire",
-  },
-  {
-    categorie: "Optique",
-    actes: "Verres & montures",
-    taux: "80 %",
-    plafond: "250 000 FCFA / bénéficiaire · Renouvelable tous les 2 ans",
-  },
-  {
-    categorie: "Hospitalisation — Clinique",
-    actes: "Frais de chambre en hospitalisation médicale et frais annexes",
-    taux: "80 %",
-    plafond: "45 000 FCFA / jour",
-  },
-  {
-    categorie: "Hospitalisation — Hôpital",
-    actes: "Hospitalisation médicale",
-    taux: "80 %",
-    plafond: "1ère catégorie de l'Hôpital Principal",
-  },
-  {
-    categorie: "Orthophonie",
-    actes: "Séances d'orthophonie",
-    taux: "80 %",
-    plafond: "100 000 FCFA / bénéficiaire / an",
-  },
-  {
-    categorie: "Maternité — Simple",
-    actes: "Frais d'accouchement simple normal",
-    taux: "80 %",
-    plafond: "400 000 FCFA / évènement · Délai d'attente : 9 mois",
-  },
-  {
-    categorie: "Maternité — Gémellaire",
-    actes: "Accouchement gémellaire normal",
-    taux: "80 %",
-    plafond: "500 000 FCFA / évènement",
-  },
-  {
-    categorie: "Maternité — Chirurgical",
-    actes: "Accouchement par voie chirurgicale ou avec complications nécessitant hospitalisation",
-    taux: "80 %",
-    plafond: "600 000 FCFA / évènement",
-  },
-  {
-    categorie: "Transport terrestre",
-    actes: "Transport par voie terrestre",
-    taux: "80 %",
-    plafond: "100 000 FCFA / évènement",
-  },
+  { categorie: "Honoraires médicaux",    actes: "Consultations, visites, actes de pratique médicale courante, petite chirurgie", taux: "80 %", plafond: "Selon barème du Syndicat des Médecins Privés du Sénégal" },
+  { categorie: "Pharmacie",              actes: "Produits pharmaceutiques remboursés",                                           taux: "80 %", plafond: "—" },
+  { categorie: "Auxiliaires médicaux",   actes: "Soins infirmiers, Kinésithérapie / Rééducation, Traitements psychiatriques",   taux: "80 %", plafond: "Soumis à entente préalable" },
+  { categorie: "Analyses biologiques",   actes: "Analyses",                                                                     taux: "80 %", plafond: "—" },
+  { categorie: "Imagerie médicale",      actes: "Radio, Scanner et IRM en externe",                                             taux: "80 %", plafond: "—" },
+  { categorie: "Soins dentaires",        actes: "Soins et prothèses dentaires",                                                 taux: "80 %", plafond: "250 000 FCFA / bénéficiaire" },
+  { categorie: "Optique",                actes: "Verres & montures",                                                            taux: "80 %", plafond: "250 000 FCFA / bénéficiaire · Renouvelable tous les 2 ans" },
+  { categorie: "Hospitalisation — Clinique", actes: "Frais de chambre en hospitalisation médicale et frais annexes",           taux: "80 %", plafond: "45 000 FCFA / jour" },
+  { categorie: "Hospitalisation — Hôpital", actes: "Hospitalisation médicale",                                                 taux: "80 %", plafond: "1ère catégorie de l'Hôpital Principal" },
+  { categorie: "Orthophonie",            actes: "Séances d'orthophonie",                                                       taux: "80 %", plafond: "100 000 FCFA / bénéficiaire / an" },
+  { categorie: "Maternité — Simple",     actes: "Frais d'accouchement simple normal",                                          taux: "80 %", plafond: "400 000 FCFA / évènement · Délai d'attente : 9 mois" },
+  { categorie: "Maternité — Gémellaire", actes: "Accouchement gémellaire normal",                                              taux: "80 %", plafond: "500 000 FCFA / évènement" },
+  { categorie: "Maternité — Chirurgical",actes: "Accouchement par voie chirurgicale ou avec complications",                    taux: "80 %", plafond: "600 000 FCFA / évènement" },
+  { categorie: "Transport terrestre",    actes: "Transport par voie terrestre",                                                 taux: "80 %", plafond: "100 000 FCFA / évènement" },
 ];
 
-// ─── Table réajustement S/P ───────────────────────────────────────────────────
-
 export const REAJUSTEMENT_SP = [
-  { rapport: "< 25 %",           ajustement: "−15 % (réduction)" },
-  { rapport: "25 % – 50 %",      ajustement: "−10 % (réduction)" },
-  { rapport: "50 % – 60 %",      ajustement: "−5 % (réduction)"  },
-  { rapport: "60 % – 75 %",      ajustement: "Aucune modification" },
-  { rapport: "75 % – 85 %",      ajustement: "+15 % (majoration)" },
-  { rapport: "85 % – 100 %",     ajustement: "+30 % (majoration)" },
-  { rapport: "100 % – 115 %",    ajustement: "+35 % (majoration)" },
-  { rapport: "115 % – 120 %",    ajustement: "+50 % (majoration)" },
-  { rapport: "120 % – 130 %",    ajustement: "+55 % (majoration)" },
-  { rapport: "130 % – 140 %",    ajustement: "+85 % (majoration)" },
-  { rapport: "> 140 %",          ajustement: "+95 % (majoration)" },
+  { rapport: "< 25 %",        ajustement: "−15 % (réduction)" },
+  { rapport: "25 % – 50 %",   ajustement: "−10 % (réduction)" },
+  { rapport: "50 % – 60 %",   ajustement: "−5 % (réduction)"  },
+  { rapport: "60 % – 75 %",   ajustement: "Aucune modification" },
+  { rapport: "75 % – 85 %",   ajustement: "+15 % (majoration)" },
+  { rapport: "85 % – 100 %",  ajustement: "+30 % (majoration)" },
+  { rapport: "100 % – 115 %", ajustement: "+35 % (majoration)" },
+  { rapport: "115 % – 120 %", ajustement: "+50 % (majoration)" },
+  { rapport: "120 % – 130 %", ajustement: "+55 % (majoration)" },
+  { rapport: "130 % – 140 %", ajustement: "+85 % (majoration)" },
+  { rapport: "> 140 %",       ajustement: "+95 % (majoration)" },
 ];
 
 // ─── Calcul décompte ──────────────────────────────────────────────────────────
 
 export function calcDecompte(beneficiaires: Beneficiaire[], typePrincipal: TypeAssure) {
   const tous = [{ type: typePrincipal }, ...beneficiaires];
-  const nbAdulte    = tous.filter(p => p.type === "adulte").length;
-  const nbAdulteAge = tous.filter(p => p.type === "adulte_age").length;
-  const primeAdultes    = nbAdulte    * PRIME_ADULTE;
-  const primeAdultesAge = nbAdulteAge * PRIME_ADULTE_AGE;
-  const primeNette      = primeAdultes + primeAdultesAge;
+  const nb: Record<TypeAssure, number> = { enfant: 0, adulte: 0, adulte_age: 0 };
+  for (const p of tous) nb[p.type]++;
+  const primeEnfants    = nb.enfant     * PRIME_ENFANT;
+  const primeAdultes    = nb.adulte     * PRIME_ADULTE;
+  const primeAdultesAge = nb.adulte_age * PRIME_ADULTE_AGE;
+  const primeNette      = primeEnfants + primeAdultes + primeAdultesAge;
   const taxes           = Math.round(primeNette * TAUX_TAXE);
   const total           = primeNette + ACCESSOIRES + taxes;
-  return { nbAdulte, nbAdulteAge, primeAdultes, primeAdultesAge, primeNette, accessoires: ACCESSOIRES, taxes, total };
+  return { nb, primeEnfants, primeAdultes, primeAdultesAge, primeNette, accessoires: ACCESSOIRES, taxes, total };
 }
 
 const DUREES = ["1", "2", "3"].map(v => ({ value: v, label: `${v} an${+v > 1 ? "s" : ""}` }));
+
+function newBeneficiaire(): Beneficiaire {
+  return { nom: "", lien: "", type: "adulte", dateNaissance: "", lieuNaissance: "", email: "", telephone: "" };
+}
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 
 export default function NewFamillePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [editingId, setEditingId]     = useState<number | null>(null);
+  const [editingId, setEditingId]         = useState<number | null>(null);
   const [showGaranties, setShowGaranties] = useState(false);
   const [showReajust, setShowReajust]     = useState(false);
+  const [expandedBen, setExpandedBen]     = useState<number | null>(null);
 
   const [photo, setPhoto] = useState<string>("");
-  const [formData, setFormData] = useState({
-    principal:          "",
-    telephone:          "",
-    typePrincipal:      "adulte" as TypeAssure,
-    dateDebut:          "",
-    dureeGarantie:      "1",
-    echeanceAuto:       true,
+  const [souscripteur, setSouscripteur] = useState({
+    nom:           "",
+    dateNaissance: "",
+    lieuNaissance: "",
+    telephone:     "",
+    email:         "",
+    adresse:       "",
+    type:          "adulte" as TypeAssure,
   });
-  const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([
-    { nom: "", lien: "", type: "adulte" },
-  ]);
+  const [formData, setFormData] = useState({
+    dateDebut:     "",
+    dureeGarantie: "1",
+    echeanceAuto:  true,
+  });
+  const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([newBeneficiaire()]);
 
-  // Date fin calculée
   const dateFin = useMemo(() => {
     if (!formData.dateDebut) return "";
     const d = new Date(formData.dateDebut);
@@ -180,20 +149,29 @@ export default function NewFamillePage() {
     return d.toLocaleDateString("fr-FR");
   }, [formData.dateDebut, formData.dureeGarantie]);
 
-  // Décompte calculé
   const decompte = useMemo(
-    () => calcDecompte(beneficiaires, formData.typePrincipal),
-    [beneficiaires, formData.typePrincipal]
+    () => calcDecompte(beneficiaires, souscripteur.type),
+    [beneficiaires, souscripteur.type]
   );
 
-  const addBeneficiaire = () =>
-    setBeneficiaires([...beneficiaires, { nom: "", lien: "", type: "adulte" }]);
-  const removeBeneficiaire = (i: number) =>
-    setBeneficiaires(beneficiaires.filter((_, idx) => idx !== i));
-  const updateBeneficiaire = (i: number, field: keyof Beneficiaire, value: string) => {
-    const updated = [...beneficiaires];
-    updated[i] = { ...updated[i], [field]: value };
-    setBeneficiaires(updated);
+  const addBeneficiaire = () => {
+    setBeneficiaires(prev => [...prev, newBeneficiaire()]);
+    setExpandedBen(beneficiaires.length);
+  };
+  const removeBeneficiaire = (i: number) => {
+    setBeneficiaires(prev => prev.filter((_, idx) => idx !== i));
+    setExpandedBen(null);
+  };
+  const updateBen = (i: number, field: keyof Beneficiaire, value: string) => {
+    setBeneficiaires(prev => {
+      const updated = [...prev];
+      updated[i] = { ...updated[i], [field]: value };
+      // Auto-catégoriser à partir de la date de naissance
+      if (field === "dateNaissance" && value) {
+        updated[i].type = typeFromDate(value);
+      }
+      return updated;
+    });
   };
 
   useEffect(() => {
@@ -204,19 +182,25 @@ export default function NewFamillePage() {
       .then((famille) => {
         if (!famille) return;
         if (famille.photo) setPhoto(famille.photo);
-        setFormData({
-          principal:     famille.principal     || "",
+        setSouscripteur({
+          nom:           famille.principal     || "",
+          dateNaissance: famille.dateNaissancePrincipal || "",
+          lieuNaissance: famille.lieuNaissancePrincipal || "",
           telephone:     famille.telephone     || "",
-          typePrincipal: famille.typePrincipal || "adulte",
+          email:         famille.emailPrincipal || "",
+          adresse:       famille.adresse       || "",
+          type:          famille.typePrincipal || "adulte",
+        });
+        setFormData({
           dateDebut:     famille.dateDebut     || "",
           dureeGarantie: famille.dureeGarantie || "1",
           echeanceAuto:  famille.echeanceAuto  ?? true,
         });
         setBeneficiaires(
-          (famille.beneficiaires || []).map((b: any) =>
+          (famille.beneficiairesDetail || famille.beneficiaires || []).map((b: any) =>
             typeof b === "string"
-              ? { nom: b.replace(/ \(.+\)$/, ""), lien: (b.match(/\((.+)\)$/) || [])[1] || "", type: "adulte" as TypeAssure }
-              : b
+              ? { nom: b.replace(/ \(.+\)$/, ""), lien: (b.match(/\((.+)\)$/) || [])[1] || "", type: "adulte" as TypeAssure, dateNaissance: "", lieuNaissance: "", email: "", telephone: "" }
+              : { dateNaissance: "", lieuNaissance: "", email: "", telephone: "", ...b }
           )
         );
       })
@@ -226,18 +210,22 @@ export default function NewFamillePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      principal:     formData.principal,
-      telephone:     formData.telephone,
-      typePrincipal: formData.typePrincipal,
-      photo:         photo || undefined,
-      beneficiaires: beneficiaires.map(b => `${b.nom} (${b.lien})`),
-      beneficiairesDetail: beneficiaires,
-      dateDebut:     formData.dateDebut,
-      dureeGarantie: formData.dureeGarantie,
-      echeanceAuto:  formData.echeanceAuto,
-      prime:         decompte.total.toString(),
-      primeNette:    decompte.primeNette.toString(),
-      taxes:         decompte.taxes.toString(),
+      principal:               souscripteur.nom,
+      dateNaissancePrincipal:  souscripteur.dateNaissance,
+      lieuNaissancePrincipal:  souscripteur.lieuNaissance,
+      telephone:               souscripteur.telephone,
+      emailPrincipal:          souscripteur.email,
+      adresse:                 souscripteur.adresse,
+      typePrincipal:           souscripteur.type,
+      photo:                   photo || undefined,
+      beneficiaires:           beneficiaires.map(b => `${b.nom} (${b.lien})`),
+      beneficiairesDetail:     beneficiaires,
+      dateDebut:               formData.dateDebut,
+      dureeGarantie:           formData.dureeGarantie,
+      echeanceAuto:            formData.echeanceAuto,
+      prime:                   decompte.total.toString(),
+      primeNette:              decompte.primeNette.toString(),
+      taxes:                   decompte.taxes.toString(),
     };
     try {
       if (editingId) {
@@ -253,12 +241,13 @@ export default function NewFamillePage() {
     }
   };
 
+  const totalPersonnes = 1 + beneficiaires.length;
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6 pb-10">
         <Button variant="ghost" onClick={() => navigate("/maladie-famille")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour
+          <ArrowLeft className="w-4 h-4 mr-2" /> Retour
         </Button>
 
         <Card className="p-6">
@@ -271,155 +260,255 @@ export default function NewFamillePage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
 
-            {/* ── Assuré principal ── */}
+            {/* ── Souscripteur ─────────────────────────────────────────── */}
             <section className="space-y-4">
-              <h3 className="font-semibold text-base border-b pb-2">Assuré principal</h3>
+              <h3 className="font-semibold text-base border-b pb-2 flex items-center gap-2">
+                <User className="w-4 h-4 text-blue-600" /> Souscripteur (assuré principal)
+              </h3>
+
               <div className="flex items-start gap-4">
-                <PhotoUpload
-                  photo={photo}
-                  onChange={setPhoto}
-                  size="lg"
-                  rounded="full"
-                  label="Photo carte"
-                />
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Nom complet</Label>
-                  <Input
-                    required
-                    value={formData.principal}
-                    onChange={e => setFormData({ ...formData, principal: e.target.value })}
-                    placeholder="Alioune Badara Diene"
-                  />
-                </div>
-                <div>
-                  <Label>Téléphone</Label>
-                  <Input
-                    required
-                    value={formData.telephone}
-                    onChange={e => setFormData({ ...formData, telephone: e.target.value })}
-                    placeholder="+221 77 123 45 67"
-                  />
-                </div>
-                <div>
-                  <Label>Catégorie</Label>
-                  <Select
-                    value={formData.typePrincipal}
-                    onValueChange={v => setFormData({ ...formData, typePrincipal: v as TypeAssure })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="adulte">Adulte — 475 000 FCFA/an</SelectItem>
-                      <SelectItem value="adulte_age">Adulte âgé — 712 500 FCFA/an</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <PhotoUpload photo={photo} onChange={setPhoto} size="lg" rounded="full" label="Photo" />
+
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <Label>Nom complet *</Label>
+                    <Input
+                      required
+                      value={souscripteur.nom}
+                      onChange={e => setSouscripteur({ ...souscripteur, nom: e.target.value })}
+                      placeholder="Alioune Badara Diene"
+                    />
+                  </div>
+                  <div>
+                    <Label>Date de naissance *</Label>
+                    <Input
+                      required
+                      type="date"
+                      value={souscripteur.dateNaissance}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setSouscripteur({ ...souscripteur, dateNaissance: v, type: typeFromDate(v) });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>Lieu de naissance</Label>
+                    <Input
+                      value={souscripteur.lieuNaissance}
+                      onChange={e => setSouscripteur({ ...souscripteur, lieuNaissance: e.target.value })}
+                      placeholder="Dakar, Saint-Louis…"
+                    />
+                  </div>
+                  <div>
+                    <Label>Téléphone *</Label>
+                    <Input
+                      required
+                      value={souscripteur.telephone}
+                      onChange={e => setSouscripteur({ ...souscripteur, telephone: e.target.value })}
+                      placeholder="+221 77 123 45 67"
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={souscripteur.email}
+                      onChange={e => setSouscripteur({ ...souscripteur, email: e.target.value })}
+                      placeholder="nom@email.com"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Adresse</Label>
+                    <Input
+                      value={souscripteur.adresse}
+                      onChange={e => setSouscripteur({ ...souscripteur, adresse: e.target.value })}
+                      placeholder="Rue, Quartier, Ville"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Catégorie</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                      {(["enfant", "adulte", "adulte_age"] as TypeAssure[]).map(t => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setSouscripteur({ ...souscripteur, type: t })}
+                          className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                            souscripteur.type === t
+                              ? TYPE_COLORS[t] + " ring-2 ring-offset-1 ring-current"
+                              : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          {TYPE_LABELS[t]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* ── Bénéficiaires ── */}
-            <section className="space-y-4">
+            {/* ── Bénéficiaires ────────────────────────────────────────── */}
+            <section className="space-y-3">
               <div className="flex justify-between items-center border-b pb-2">
-                <h3 className="font-semibold text-base">
-                  Bénéficiaires{" "}
+                <h3 className="font-semibold text-base flex items-center gap-2">
+                  <Users className="w-4 h-4 text-purple-600" />
+                  Bénéficiaires
                   <span className="text-sm text-muted-foreground font-normal">
-                    ({beneficiaires.length} — total {beneficiaires.length + 1} personnes)
+                    ({beneficiaires.length} — {totalPersonnes} personne{totalPersonnes > 1 ? "s" : ""} au total)
                   </span>
                 </h3>
                 <Button type="button" variant="outline" size="sm" onClick={addBeneficiaire}>
-                  <Plus className="w-4 h-4 mr-2" /> Ajouter
+                  <Plus className="w-4 h-4 mr-1" /> Ajouter
                 </Button>
               </div>
 
-              {beneficiaires.map((ben, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-start">
-                  <Input
-                    required
-                    placeholder="Nom du bénéficiaire"
-                    value={ben.nom}
-                    onChange={e => updateBeneficiaire(idx, "nom", e.target.value)}
-                  />
-                  <Input
-                    required
-                    placeholder="Lien (Épouse, Fils…)"
-                    value={ben.lien}
-                    onChange={e => updateBeneficiaire(idx, "lien", e.target.value)}
-                  />
-                  <Select
-                    value={ben.type}
-                    onValueChange={v => updateBeneficiaire(idx, "type", v)}
-                  >
-                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="adulte">Adulte</SelectItem>
-                      <SelectItem value="adulte_age">Adulte âgé</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {beneficiaires.length > 1 && (
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removeBeneficiaire(idx)}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+              {beneficiaires.map((ben, idx) => {
+                const isOpen = expandedBen === idx;
+                return (
+                  <Card key={idx} className="border overflow-hidden">
+                    {/* En-tête bénéficiaire */}
+                    <div className="p-3 bg-gray-50 flex items-center gap-3">
+                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${TYPE_COLORS[ben.type]}`}>
+                        {ben.type === "enfant" ? "Enfant" : ben.type === "adulte" ? "Adulte" : "Âgé"}
+                      </div>
+                      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <Input
+                          required
+                          placeholder="Nom complet *"
+                          value={ben.nom}
+                          onChange={e => updateBen(idx, "nom", e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <Input
+                          required
+                          placeholder="Lien (Épouse, Fils…) *"
+                          value={ben.lien}
+                          onChange={e => updateBen(idx, "lien", e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <Input
+                          type="date"
+                          placeholder="Date de naissance"
+                          value={ben.dateNaissance}
+                          onChange={e => updateBen(idx, "dateNaissance", e.target.value)}
+                          className="h-8 text-sm"
+                          title="Date de naissance (auto-catégorise)"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedBen(isOpen ? null : idx)}
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
+                        >
+                          {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          Détails
+                        </button>
+                        {beneficiaires.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeBeneficiaire(idx)}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Détails étendus */}
+                    {isOpen && (
+                      <div className="p-4 border-t space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Lieu de naissance</Label>
+                            <Input
+                              value={ben.lieuNaissance}
+                              onChange={e => updateBen(idx, "lieuNaissance", e.target.value)}
+                              placeholder="Dakar, Thiès…"
+                              className="h-8 text-sm mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Téléphone</Label>
+                            <Input
+                              value={ben.telephone}
+                              onChange={e => updateBen(idx, "telephone", e.target.value)}
+                              placeholder="+221 77 000 00 00"
+                              className="h-8 text-sm mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Email</Label>
+                            <Input
+                              type="email"
+                              value={ben.email}
+                              onChange={e => updateBen(idx, "email", e.target.value)}
+                              placeholder="email@exemple.com"
+                              className="h-8 text-sm mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Catégorie</Label>
+                            <div className="grid grid-cols-3 gap-1 mt-1">
+                              {(["enfant", "adulte", "adulte_age"] as TypeAssure[]).map(t => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  onClick={() => updateBen(idx, "type", t)}
+                                  className={`px-2 py-1.5 rounded border text-[10px] font-medium transition-all ${
+                                    ben.type === t
+                                      ? TYPE_COLORS[t] + " ring-1 ring-current ring-offset-1"
+                                      : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  {t === "enfant" ? "Enfant" : t === "adulte" ? "Adulte" : "Âgé"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </section>
 
-            {/* ── Durée & Échéance ── */}
+            {/* ── Durée & Échéance ─────────────────────────────────────── */}
             <section className="space-y-4">
               <h3 className="font-semibold text-base border-b pb-2">Durée & Échéance</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label>Durée de la garantie</Label>
-                  <Select
-                    value={formData.dureeGarantie}
-                    onValueChange={v => setFormData({ ...formData, dureeGarantie: v })}
-                  >
+                  <Select value={formData.dureeGarantie} onValueChange={v => setFormData({ ...formData, dureeGarantie: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {DUREES.map(d => (
-                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                      ))}
+                      {DUREES.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Date de début</Label>
-                  <Input
-                    required
-                    type="date"
-                    value={formData.dateDebut}
-                    onChange={e => setFormData({ ...formData, dateDebut: e.target.value })}
-                  />
+                  <Input required type="date" value={formData.dateDebut} onChange={e => setFormData({ ...formData, dateDebut: e.target.value })} />
                 </div>
                 <div>
                   <Label>Date d'échéance (calculée)</Label>
-                  <Input
-                    readOnly
-                    value={dateFin}
-                    className="bg-gray-50 text-muted-foreground cursor-not-allowed"
-                    placeholder="—"
-                  />
+                  <Input readOnly value={dateFin} className="bg-gray-50 text-muted-foreground cursor-not-allowed" placeholder="—" />
                 </div>
               </div>
-
-              {/* Toggle renouvellement auto */}
               <div className="flex items-center gap-3 p-3 rounded-lg border bg-gray-50">
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, echeanceAuto: !formData.echeanceAuto })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.echeanceAuto ? "bg-blue-600" : "bg-gray-300"
-                  }`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.echeanceAuto ? "bg-blue-600" : "bg-gray-300"}`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    formData.echeanceAuto ? "translate-x-6" : "translate-x-1"
-                  }`} />
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.echeanceAuto ? "translate-x-6" : "translate-x-1"}`} />
                 </button>
                 <div>
                   <p className="text-sm font-medium flex items-center gap-2">
-                    <RefreshCw className="w-4 h-4 text-blue-600" />
-                    Renouvellement automatique à l'échéance
+                    <RefreshCw className="w-4 h-4 text-blue-600" /> Renouvellement automatique à l'échéance
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formData.echeanceAuto
@@ -430,50 +519,35 @@ export default function NewFamillePage() {
               </div>
             </section>
 
-            {/* ── Décompte de la prime ── */}
+            {/* ── Décompte de la prime ─────────────────────────────────── */}
             <section className="space-y-3">
               <h3 className="font-semibold text-base border-b pb-2">Décompte de la prime</h3>
 
-              {/* Population */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                  <p className="text-muted-foreground text-xs">Adulte(s)</p>
-                  <p className="font-bold text-lg">{decompte.nbAdulte}</p>
-                  <p className="text-xs text-blue-700">{PRIME_ADULTE.toLocaleString("fr-FR")} FCFA/pers</p>
-                </div>
-                <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
-                  <p className="text-muted-foreground text-xs">Adulte(s) âgé(s)</p>
-                  <p className="font-bold text-lg">{decompte.nbAdulteAge}</p>
-                  <p className="text-xs text-purple-700">{PRIME_ADULTE_AGE.toLocaleString("fr-FR")} FCFA/pers</p>
-                </div>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                {(["enfant", "adulte", "adulte_age"] as TypeAssure[]).map(t => (
+                  <div key={t} className={`p-3 rounded-lg border ${TYPE_COLORS[t]}`}>
+                    <p className="text-xs opacity-80">{t === "enfant" ? "Enfant(s)" : t === "adulte" ? "Adulte(s)" : "Âgé(s)"}</p>
+                    <p className="font-bold text-lg">{decompte.nb[t]}</p>
+                    <p className="text-[10px] opacity-70">{TYPE_PRICES[t].toLocaleString("fr-FR")} FCFA/pers</p>
+                  </div>
+                ))}
               </div>
 
-              {/* Tableau décompte */}
               <div className="rounded-xl border overflow-hidden text-sm">
                 <div className="bg-gray-50 px-4 py-2 font-semibold text-xs text-muted-foreground uppercase tracking-wide">
                   Décompte annuel × {formData.dureeGarantie} an{+formData.dureeGarantie > 1 ? "s" : ""}
                 </div>
                 {[
-                  {
-                    label: `Prime nette adulte${decompte.nbAdulte > 1 ? "s" : ""} (${PRIME_ADULTE.toLocaleString()} × ${decompte.nbAdulte})`,
-                    value: decompte.primeAdultes,
-                    show: decompte.nbAdulte > 0,
-                  },
-                  {
-                    label: `Prime nette adulte${decompte.nbAdulteAge > 1 ? "s" : ""} âgé${decompte.nbAdulteAge > 1 ? "s" : ""} (${PRIME_ADULTE_AGE.toLocaleString()} × ${decompte.nbAdulteAge})`,
-                    value: decompte.primeAdultesAge,
-                    show: decompte.nbAdulteAge > 0,
-                  },
+                  { label: `Enfants (${PRIME_ENFANT.toLocaleString()} × ${decompte.nb.enfant})`,         value: decompte.primeEnfants,    show: decompte.nb.enfant > 0 },
+                  { label: `Adultes (${PRIME_ADULTE.toLocaleString()} × ${decompte.nb.adulte})`,         value: decompte.primeAdultes,    show: decompte.nb.adulte > 0 },
+                  { label: `Personnes âgées (${PRIME_ADULTE_AGE.toLocaleString()} × ${decompte.nb.adulte_age})`, value: decompte.primeAdultesAge, show: decompte.nb.adulte_age > 0 },
                   { label: "Prime nette totale", value: decompte.primeNette, show: true, bold: true },
-                  { label: "Accessoires", value: decompte.accessoires, show: true },
+                  { label: "Accessoires",        value: decompte.accessoires, show: true },
                   { label: `Taxes (${(TAUX_TAXE * 100).toFixed(1)} %)`, value: decompte.taxes, show: true },
                 ].filter(r => r.show).map((row, i) => (
-                  <div
-                    key={i}
-                    className={`flex justify-between items-center px-4 py-2.5 border-t ${row.bold ? "bg-blue-50 font-semibold" : ""}`}
-                  >
+                  <div key={i} className={`flex justify-between items-center px-4 py-2.5 border-t ${(row as any).bold ? "bg-blue-50 font-semibold" : ""}`}>
                     <span className="text-sm">{row.label}</span>
-                    <span className={`font-mono text-sm ${row.bold ? "text-blue-700" : ""}`}>
+                    <span className={`font-mono text-sm ${(row as any).bold ? "text-blue-700" : ""}`}>
                       {(row.value * Number(formData.dureeGarantie)).toLocaleString("fr-FR")} FCFA
                     </span>
                   </div>
@@ -487,33 +561,25 @@ export default function NewFamillePage() {
               </div>
             </section>
 
-            {/* ── Tableau des garanties (collapsible) ── */}
+            {/* ── Garanties ────────────────────────────────────────────── */}
             <section>
-              <button
-                type="button"
-                onClick={() => setShowGaranties(!showGaranties)}
-                className="w-full flex items-center justify-between p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
+              <button type="button" onClick={() => setShowGaranties(!showGaranties)}
+                className="w-full flex items-center justify-between p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors">
                 <span className="font-semibold text-sm">Tableau des garanties — Prise en charge au Sénégal</span>
                 {showGaranties ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               {showGaranties && (
                 <div className="mt-2 overflow-x-auto rounded-lg border">
                   <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-blue-700 text-white">
-                        <th className="text-left p-3 font-semibold">Nature des actes</th>
-                        <th className="p-3 text-center font-semibold w-24">Taux</th>
-                        <th className="text-left p-3 font-semibold">Plafond de remboursement</th>
-                      </tr>
-                    </thead>
+                    <thead><tr className="bg-blue-700 text-white">
+                      <th className="text-left p-3">Nature des actes</th>
+                      <th className="p-3 text-center w-20">Taux</th>
+                      <th className="text-left p-3">Plafond</th>
+                    </tr></thead>
                     <tbody>
                       {GARANTIES_CNART.map((row, i) => (
                         <tr key={i} className={`border-t ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                          <td className="p-3">
-                            <p className="font-semibold text-xs text-blue-700">{row.categorie}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{row.actes}</p>
-                          </td>
+                          <td className="p-3"><p className="font-semibold text-xs text-blue-700">{row.categorie}</p><p className="text-xs text-muted-foreground mt-0.5">{row.actes}</p></td>
                           <td className="p-3 text-center font-bold text-green-700">{row.taux}</td>
                           <td className="p-3 text-xs text-muted-foreground">{row.plafond}</td>
                         </tr>
@@ -524,41 +590,28 @@ export default function NewFamillePage() {
               )}
             </section>
 
-            {/* ── Réajustement S/P (collapsible) ── */}
+            {/* ── Réajustement S/P ─────────────────────────────────────── */}
             <section>
-              <button
-                type="button"
-                onClick={() => setShowReajust(!showReajust)}
-                className="w-full flex items-center justify-between p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
+              <button type="button" onClick={() => setShowReajust(!showReajust)}
+                className="w-full flex items-center justify-between p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors">
                 <span className="font-semibold text-sm">Réajustement de la prime — Rapport S/P</span>
                 {showReajust ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               {showReajust && (
                 <div className="mt-2 overflow-x-auto rounded-lg border">
                   <div className="p-3 bg-amber-50 border-b text-xs text-amber-800">
-                    Dans les 3 mois suivant l'échéance, un avenant de réajustement est établi en fonction du rapport Sinistres / Primes (S/P).
+                    Dans les 3 mois suivant l'échéance, un avenant de réajustement est établi selon le rapport S/P.
                   </div>
                   <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="text-left p-3 font-semibold">Rapport S/P</th>
-                        <th className="text-left p-3 font-semibold">Ajustement de prime</th>
-                      </tr>
-                    </thead>
+                    <thead><tr className="bg-gray-100">
+                      <th className="text-left p-3">Rapport S/P</th>
+                      <th className="text-left p-3">Ajustement</th>
+                    </tr></thead>
                     <tbody>
                       {REAJUSTEMENT_SP.map((row, i) => (
-                        <tr key={i} className={`border-t ${
-                          row.ajustement.includes("réduction") ? "bg-green-50"
-                          : row.ajustement === "Aucune modification" ? "bg-gray-50"
-                          : "bg-red-50"
-                        }`}>
+                        <tr key={i} className={`border-t ${row.ajustement.includes("réduction") ? "bg-green-50" : row.ajustement === "Aucune modification" ? "bg-gray-50" : "bg-red-50"}`}>
                           <td className="p-3 font-mono text-xs">{row.rapport}</td>
-                          <td className={`p-3 text-xs font-semibold ${
-                            row.ajustement.includes("réduction") ? "text-green-700"
-                            : row.ajustement === "Aucune modification" ? "text-gray-600"
-                            : "text-red-700"
-                          }`}>{row.ajustement}</td>
+                          <td className={`p-3 text-xs font-semibold ${row.ajustement.includes("réduction") ? "text-green-700" : row.ajustement === "Aucune modification" ? "text-gray-600" : "text-red-700"}`}>{row.ajustement}</td>
                         </tr>
                       ))}
                     </tbody>
