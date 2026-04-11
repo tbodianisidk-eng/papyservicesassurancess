@@ -144,53 +144,64 @@ function parseExcel(file: File): Promise<MembrePopulation[]> {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target!.result as ArrayBuffer);
-        const wb   = XLSX.read(data, { type: "array", cellDates: true });
-        const ws   = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        // Ne PAS utiliser cellDates:true — on gère les dates manuellement
+        const wb = XLSX.read(data, { type: "array" });
 
-        if (rows.length < 2) {
-          reject(new Error("Le fichier ne contient pas de données")); return;
+        // Lire la première feuille non vide
+        let ws: XLSX.WorkSheet | null = null;
+        for (const name of wb.SheetNames) {
+          const candidate = wb.Sheets[name];
+          if (candidate && candidate["!ref"]) { ws = candidate; break; }
+        }
+        if (!ws) { reject(new Error("Fichier Excel vide ou illisible")); return; }
+
+        // Lire toutes les lignes sous forme de tableaux bruts
+        const rows = XLSX.utils.sheet_to_json(ws, {
+          header: 1,
+          defval: "",
+          blankrows: false,
+        }) as any[][];
+
+        // Trouver la ligne d'en-tête : première ligne avec au moins 2 cellules texte non vides
+        let headerRowIdx = -1;
+        for (let i = 0; i < Math.min(10, rows.length); i++) {
+          const textCells = (rows[i] ?? []).filter(
+            (c: any) => typeof c === "string" && c.trim().length > 0
+          );
+          if (textCells.length >= 2) { headerRowIdx = i; break; }
         }
 
-        // Trouver la ligne d'en-tête : première ligne contenant du texte non vide
-        let headerRowIdx = 0;
-        for (let i = 0; i < Math.min(5, rows.length); i++) {
-          const row = rows[i];
-          if (row && row.some((c: any) => typeof c === "string" && c.trim().length > 1)) {
-            headerRowIdx = i;
-            break;
-          }
-        }
-        const headers = (rows[headerRowIdx] ?? []).map((h: any) => String(h ?? "").toLowerCase().trim());
+        // Mapper les colonnes
+        const idx = { numero: 0, nom: 1, dateNaissance: 2, sexe: 3, pieceIdentite: 4, lien: 5, dateAdhesion: 6, salaire: 7, garantie: 8 };
 
-        // Mapper les colonnes par nom d'en-tête
-        const idx = {
-          numero:        findColIndex(headers, "numero"),
-          nom:           findColIndex(headers, "nom"),
-          dateNaissance: findColIndex(headers, "dateNaissance"),
-          sexe:          findColIndex(headers, "sexe"),
-          pieceIdentite: findColIndex(headers, "pieceIdentite"),
-          lien:          findColIndex(headers, "lien"),
-          dateAdhesion:  findColIndex(headers, "dateAdhesion"),
-          salaire:       findColIndex(headers, "salaire"),
-          garantie:      findColIndex(headers, "garantie"),
-        };
-
-        // Si aucun en-tête reconnu → fallback sur l'ordre des colonnes du modèle
-        const hasHeaders = idx.nom >= 0;
-        if (!hasHeaders) {
-          idx.numero = 0; idx.nom = 1; idx.dateNaissance = 2; idx.sexe = 3;
-          idx.pieceIdentite = 4; idx.lien = 5; idx.dateAdhesion = 6;
-          idx.salaire = 7; idx.garantie = 8;
+        if (headerRowIdx >= 0) {
+          const headers = (rows[headerRowIdx] ?? []).map((h: any) => String(h ?? "").toLowerCase().trim());
+          idx.numero        = findColIndex(headers, "numero")        >= 0 ? findColIndex(headers, "numero")        : 0;
+          idx.nom           = findColIndex(headers, "nom")           >= 0 ? findColIndex(headers, "nom")           : 1;
+          idx.dateNaissance = findColIndex(headers, "dateNaissance") >= 0 ? findColIndex(headers, "dateNaissance") : 2;
+          idx.sexe          = findColIndex(headers, "sexe")          >= 0 ? findColIndex(headers, "sexe")          : 3;
+          idx.pieceIdentite = findColIndex(headers, "pieceIdentite") >= 0 ? findColIndex(headers, "pieceIdentite") : 4;
+          idx.lien          = findColIndex(headers, "lien")          >= 0 ? findColIndex(headers, "lien")          : 5;
+          idx.dateAdhesion  = findColIndex(headers, "dateAdhesion")  >= 0 ? findColIndex(headers, "dateAdhesion")  : 6;
+          idx.salaire       = findColIndex(headers, "salaire")       >= 0 ? findColIndex(headers, "salaire")       : 7;
+          idx.garantie      = findColIndex(headers, "garantie")      >= 0 ? findColIndex(headers, "garantie")      : 8;
         }
 
-        const get = (row: any[], i: number) => (i >= 0 ? row[i] : undefined);
+        const get = (row: any[], i: number) => (i >= 0 ? row[i] : "");
 
         const membres: MembrePopulation[] = [];
-        for (let i = headerRowIdx + 1; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row || row.length === 0) continue;
-          const nom = String(get(row, idx.nom) ?? "").trim();
+        // Si aucun en-tête trouvé, démarrer dès la ligne 0
+        const dataStart = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+
+        for (let i = dataStart; i < rows.length; i++) {
+          const row = rows[i] ?? [];
+          // Essayer de trouver un nom dans n'importe quelle colonne si idx.nom rate
+          let nom = String(get(row, idx.nom) ?? "").trim();
+          if (!nom) {
+            // Chercher la première cellule texte non vide de la ligne
+            const fallback = row.find((c: any) => typeof c === "string" && c.trim().length > 1 && isNaN(Number(c)));
+            if (fallback) nom = String(fallback).trim();
+          }
           if (!nom) continue;
 
           const dateNaissance = toDateStr(get(row, idx.dateNaissance));
@@ -203,10 +214,18 @@ function parseExcel(file: File): Promise<MembrePopulation[]> {
             pieceIdentite: String(get(row, idx.pieceIdentite) ?? "").trim(),
             lien:          String(get(row, idx.lien)          ?? "").trim(),
             dateAdhesion:  toDateStr(get(row, idx.dateAdhesion)) || String(get(row, idx.dateAdhesion) ?? "").trim(),
-            salaire:       get(row, idx.salaire) != null ? String(get(row, idx.salaire)) : undefined,
-            garantie:      String(get(row, idx.garantie) ?? "Standard").trim() || "Standard",
+            salaire:       get(row, idx.salaire) ? String(get(row, idx.salaire)) : undefined,
+            garantie:      String(get(row, idx.garantie) ?? "").trim() || "Standard",
             type:          typeFromDate(dateNaissance),
           });
+        }
+
+        if (membres.length === 0) {
+          reject(new Error(
+            `Aucune donnée trouvée. Vérifiez que le fichier contient bien des données à partir de la ligne 2 ` +
+            `(${rows.length} ligne${rows.length > 1 ? "s" : ""} lue${rows.length > 1 ? "s" : ""} au total).`
+          ));
+          return;
         }
         resolve(membres);
       } catch (err) {
