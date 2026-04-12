@@ -15,11 +15,22 @@ export default function NewAssurePage() {
     numero: "",
     nom: "",
     prenom: "",
+    dateNaissance: "",
+    sexe: "M",
+    pieceIdentite: "",
     telephone: "",
     email: "",
+    adresse: "",
+    lien: "Principal",
+    dateAdhesion: "",
+    salaire: "",
+    garantie: "Standard",
     type: "FAMILLE",
-    adresse: ""
+    statut: "ACTIF",
   });
+
+  const set = (field: string, value: string) =>
+    setFormData(prev => ({ ...prev, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,116 +45,120 @@ export default function NewAssurePage() {
     }
   };
 
+  const field = (id: string, label: string, node: React.ReactNode) => (
+    <div>
+      <Label htmlFor={id} className="text-xs sm:text-sm font-medium">{label}</Label>
+      <div className="mt-1 sm:mt-2">{node}</div>
+    </div>
+  );
+
+  const inp = (id: string, placeholder = "", type = "text") => (
+    <Input
+      id={id}
+      type={type}
+      value={(formData as any)[id]}
+      onChange={(e) => set(id, e.target.value)}
+      placeholder={placeholder}
+      className="text-xs sm:text-sm h-9 sm:h-10"
+    />
+  );
+
+  const sel = (id: string, options: { value: string; label: string }[]) => (
+    <select
+      id={id}
+      value={(formData as any)[id]}
+      onChange={(e) => set(id, e.target.value)}
+      className="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm h-9 sm:h-10 rounded-lg border border-input bg-card focus:outline-none focus:ring-2 focus:ring-ring"
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+
   return (
     <AppLayout title="Nouvel assuré">
       <div className="w-full px-2 sm:px-0">
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="w-full max-w-2xl space-y-4 sm:space-y-6">
-            <Button variant="ghost" onClick={() => navigate('/assures')} className="mb-2 sm:mb-4 text-xs sm:text-sm px-2 sm:px-4">
+        <div className="flex justify-center">
+          <div className="w-full max-w-3xl space-y-4 sm:space-y-6">
+            <Button variant="ghost" onClick={() => navigate('/assures')} className="mb-2 text-xs sm:text-sm px-2 sm:px-4">
               <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> Retour
             </Button>
 
-            <Card className="p-3 sm:p-4 md:p-6">
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
-                <div>
-                  <Label htmlFor="numero" className="text-xs sm:text-sm font-medium">Numéro</Label>
-                  <Input
-                    id="numero"
-                    value={formData.numero}
-                    onChange={(e) => setFormData({...formData, numero: e.target.value})}
-                    required
-                    className="mt-1 sm:mt-2 text-xs sm:text-sm h-9 sm:h-10"
-                    placeholder="ASS-2024-001"
-                  />
+            <Card className="p-4 sm:p-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Numéro */}
+                {field("numero", "Numéro *",
+                  <Input id="numero" value={formData.numero} onChange={e => set("numero", e.target.value)}
+                    required placeholder="ASS-2024-001" className="text-xs sm:text-sm h-9 sm:h-10" />
+                )}
+
+                {/* Identité */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {field("nom", "Nom *",
+                    <Input id="nom" value={formData.nom} onChange={e => set("nom", e.target.value)}
+                      required placeholder="Diop" className="text-xs sm:text-sm h-9 sm:h-10" />
+                  )}
+                  {field("prenom", "Prénom *",
+                    <Input id="prenom" value={formData.prenom} onChange={e => set("prenom", e.target.value)}
+                      required placeholder="Moussa" className="text-xs sm:text-sm h-9 sm:h-10" />
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                  <div>
-                    <Label htmlFor="nom" className="text-xs sm:text-sm font-medium">Nom</Label>
-                    <Input
-                      id="nom"
-                      value={formData.nom}
-                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                      required
-                      className="mt-1 sm:mt-2 text-xs sm:text-sm h-9 sm:h-10"
-                      placeholder="Diop"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="prenom" className="text-xs sm:text-sm font-medium">Prénom</Label>
-                    <Input
-                      id="prenom"
-                      value={formData.prenom}
-                      onChange={(e) => setFormData({...formData, prenom: e.target.value})}
-                      required
-                      className="mt-1 sm:mt-2 text-xs sm:text-sm h-9 sm:h-10"
-                      placeholder="Moussa"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  {field("dateNaissance", "Date de naissance", inp("dateNaissance", "", "date"))}
+                  {field("sexe", "Sexe", sel("sexe", [
+                    { value: "M", label: "Masculin" },
+                    { value: "F", label: "Féminin" },
+                  ]))}
+                  {field("pieceIdentite", "N° pièce d'identité", inp("pieceIdentite", "1234567890001"))}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                  <div>
-                    <Label htmlFor="telephone" className="text-xs sm:text-sm font-medium">Téléphone</Label>
-                    <Input
-                      id="telephone"
-                      type="tel"
-                      value={formData.telephone}
-                      onChange={(e) => setFormData({...formData, telephone: e.target.value})}
-                      required
-                      className="mt-1 sm:mt-2 text-xs sm:text-sm h-9 sm:h-10"
-                      placeholder="+221771234567"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email" className="text-xs sm:text-sm font-medium">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="mt-1 sm:mt-2 text-xs sm:text-sm h-9 sm:h-10"
-                      placeholder="moussa.diop@email.com"
-                    />
-                  </div>
+                {/* Contact */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {field("telephone", "Téléphone",
+                    <Input id="telephone" type="tel" value={formData.telephone}
+                      onChange={e => set("telephone", e.target.value)}
+                      placeholder="+221771234567" className="text-xs sm:text-sm h-9 sm:h-10" />
+                  )}
+                  {field("email", "Email",
+                    <Input id="email" type="email" value={formData.email}
+                      onChange={e => set("email", e.target.value)}
+                      placeholder="moussa.diop@email.com" className="text-xs sm:text-sm h-9 sm:h-10" />
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-                  <div>
-                    <Label htmlFor="type" className="text-xs sm:text-sm font-medium">Type</Label>
-                    <select
-                      id="type"
-                      value={formData.type}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                      required
-                      className="mt-1 sm:mt-2 w-full px-3 sm:px-4 py-2 text-xs sm:text-sm h-9 sm:h-10 rounded-lg border border-input bg-card focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="FAMILLE">Famille</option>
-                      <option value="GROUPE">Groupe</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="adresse" className="text-xs sm:text-sm font-medium">Adresse</Label>
-                    <Input
-                      id="adresse"
-                      value={formData.adresse}
-                      onChange={(e) => setFormData({...formData, adresse: e.target.value})}
-                      className="mt-1 sm:mt-2 text-xs sm:text-sm h-9 sm:h-10"
-                      placeholder="Dakar, Sénégal"
-                    />
-                  </div>
+                {field("adresse", "Adresse", inp("adresse", "Dakar, Sénégal"))}
+
+                {/* Assurance */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {field("lien", "Lien avec l'adhérent", sel("lien", [
+                    { value: "Principal", label: "Principal" },
+                    { value: "Conjoint", label: "Conjoint(e)" },
+                    { value: "Enfant", label: "Enfant" },
+                    { value: "Autre", label: "Autre" },
+                  ]))}
+                  {field("dateAdhesion", "Date d'adhésion", inp("dateAdhesion", "", "date"))}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  {field("salaire", "Salaire (FCFA)", inp("salaire", "500000"))}
+                  {field("garantie", "Garantie", sel("garantie", [
+                    { value: "Standard", label: "Standard" },
+                    { value: "Premium", label: "Premium" },
+                    { value: "Gold", label: "Gold" },
+                  ]))}
+                  {field("type", "Type", sel("type", [
+                    { value: "FAMILLE", label: "Famille" },
+                    { value: "GROUPE", label: "Groupe" },
+                  ]))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <Button type="submit" className="flex-1 h-9 sm:h-10 text-xs sm:text-sm font-medium">
                     Créer l'assuré
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate('/assures')}
-                    className="flex-1 sm:flex-none h-9 sm:h-10 text-xs sm:text-sm"
-                  >
+                  <Button type="button" variant="outline" onClick={() => navigate('/assures')}
+                    className="flex-1 sm:flex-none h-9 sm:h-10 text-xs sm:text-sm">
                     Annuler
                   </Button>
                 </div>

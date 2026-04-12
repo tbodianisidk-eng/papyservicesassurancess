@@ -1,111 +1,190 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Mail, MapPin, Shield, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Shield, Edit, Trash2, Loader2, Save, X, Calendar, User, CreditCard, Briefcase, Heart } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DataService } from "@/services/dataService";
-import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DataService } from "@/services/dataService";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+
+const statutColor: Record<string, string> = {
+  ACTIF:    "bg-green-100 text-green-700 border-green-200",
+  SUSPENDU: "bg-amber-100 text-amber-700 border-amber-200",
+  RESILIE:  "bg-red-100 text-red-700 border-red-200",
+};
+
+function fmtDate(d?: string) {
+  if (!d) return "—";
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+  const dt = new Date(d);
+  return isNaN(dt.getTime()) ? d : dt.toLocaleDateString("fr-FR");
+}
+
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium">{value || "—"}</span>
+    </div>
+  );
+}
 
 export default function AssureDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [assure, setAssure] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string|null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<any>({});
+  const [form, setForm] = useState<any>({});
 
   useEffect(() => {
-    const loadAssure = async () => {
-      if (!id) {
-        setError('ID invalide');
-        setLoading(false);
-        return;
-      }
-      try {
-        const found = await DataService.getAssureById(id);
-        setAssure(found);
-        setFormData(found);
-      } catch (err) {
-        console.error('AssureDetailsPage: impossible de charger l’assuré', err);
-        setError('Erreur lors du chargement de l’assuré');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadAssure();
+    if (!id) { setError("ID invalide"); setLoading(false); return; }
+    DataService.getAssureById(id)
+      .then(found => { setAssure(found); setForm(found ?? {}); })
+      .catch(() => setError("Assuré introuvable"))
+      .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) {
-    return <AppLayout title="Chargement...">Chargement en cours...</AppLayout>;
-  }
+  const set = (field: string, value: string) =>
+    setForm((prev: any) => ({ ...prev, [field]: value }));
 
-  if (error || !assure) {
-    return <AppLayout title="Assuré introuvable"><p>{error ?? 'Assuré non trouvé'}</p></AppLayout>;
-  }
-
-  const handleUpdate = () => {
-    alert("Assuré modifié avec succès !");
-    setIsEditing(false);
-  };
-
-  const handleDelete = () => {
-    if (confirm("Voulez-vous vraiment supprimer cet assuré ?")) {
-      alert("Assuré supprimé avec succès !");
-      navigate('/assures');
+  const handleUpdate = async () => {
+    setSaving(true);
+    try {
+      const updated = await DataService.updateAssure(String(assure.id), form);
+      setAssure(updated ?? form);
+      setIsEditing(false);
+      toast.success("Assuré mis à jour avec succès !");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      toast.error("Erreur lors de la mise à jour : " + msg);
+    } finally {
+      setSaving(false);
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Voulez-vous vraiment supprimer cet assuré ? Cette action est irréversible.")) return;
+    try {
+      await DataService.deleteAssure(String(assure.id));
+      toast.success("Assuré supprimé.");
+      navigate("/assures");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      toast.error("Erreur lors de la suppression : " + msg);
+    }
+  };
+
+  if (loading) return (
+    <AppLayout title="Chargement...">
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-7 h-7 animate-spin text-muted-foreground" />
+      </div>
+    </AppLayout>
+  );
+
+  if (error || !assure) return (
+    <AppLayout title="Assuré introuvable">
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <p className="text-muted-foreground">{error ?? "Assuré non trouvé"}</p>
+        <Button variant="ghost" onClick={() => navigate("/assures")}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Retour à la liste
+        </Button>
+      </div>
+    </AppLayout>
+  );
+
+  const statut = (assure.statut || "ACTIF").toUpperCase();
+  const initiales = ((assure.prenom || "?")[0] + (assure.nom || "?")[0]).toUpperCase();
+
+  const inp = (field: string, placeholder = "", type = "text") => (
+    <Input
+      type={type}
+      value={form[field] ?? ""}
+      onChange={e => set(field, e.target.value)}
+      placeholder={placeholder}
+      className="text-sm h-9"
+    />
+  );
+
+  const sel = (field: string, options: { value: string; label: string }[]) => (
+    <select
+      value={form[field] ?? ""}
+      onChange={e => set(field, e.target.value)}
+      className="w-full px-3 py-2 text-sm h-9 rounded-lg border border-input bg-card focus:outline-none focus:ring-2 focus:ring-ring"
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+
   return (
-    <AppLayout title={`${assure.nom} ${assure.prenom}`}>
-      <div className="max-w-4xl space-y-6">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/assures')}>
+    <AppLayout title={`${assure.prenom} ${assure.nom}`}>
+      <div className="max-w-4xl space-y-5">
+
+        {/* ── En-tête ── */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <Button variant="ghost" onClick={() => navigate("/assures")} className="text-sm px-3">
             <ArrowLeft className="w-4 h-4 mr-2" /> Retour
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
-              <Edit className="w-4 h-4 mr-2" /> {isEditing ? 'Annuler' : 'Modifier'}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="w-4 h-4 mr-2" /> Supprimer
-            </Button>
+            {isEditing ? (
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(false)} className="text-sm h-9">
+                  <X className="w-4 h-4 mr-1.5" /> Annuler
+                </Button>
+                <Button onClick={handleUpdate} disabled={saving} className="text-sm h-9">
+                  {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />}
+                  Enregistrer
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(true)} className="text-sm h-9">
+                  <Edit className="w-4 h-4 mr-1.5" /> Modifier
+                </Button>
+                <Button variant="destructive" onClick={handleDelete} className="text-sm h-9">
+                  <Trash2 className="w-4 h-4 mr-1.5" /> Supprimer
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
-        <Card className="p-6">
-          <div className="flex items-start gap-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">
-              {assure.nom[0]}{assure.prenom[0]}
+        {/* ── Carte identité ── */}
+        <Card className="p-5">
+          <div className="flex items-start gap-5">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shrink-0">
+              {initiales}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {isEditing ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Nom</Label>
-                      <Input value={formData.nom} onChange={(e) => setFormData({...formData, nom: e.target.value})} />
-                    </div>
-                    <div>
-                      <Label>Prénom</Label>
-                      <Input value={formData.prenom} onChange={(e) => setFormData({...formData, prenom: e.target.value})} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Profession</Label>
-                    <Input value={formData.profession} onChange={(e) => setFormData({...formData, profession: e.target.value})} />
-                  </div>
-                  <Button onClick={handleUpdate}>Enregistrer</Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Nom</Label>{inp("nom", "Diop")}</div>
+                  <div><Label className="text-xs">Prénom</Label>{inp("prenom", "Moussa")}</div>
                 </div>
               ) : (
                 <>
-                  <h2 className="text-3xl font-bold mb-2">{assure.nom} {assure.prenom}</h2>
-                  <p className="text-muted-foreground mb-4">{assure.profession}</p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success border border-success/20">
-                    <Shield className="w-4 h-4" />
-                    {assure.statut}
+                  <h2 className="text-2xl font-bold">{assure.prenom} {assure.nom}</h2>
+                  <p className="text-muted-foreground font-mono text-sm mt-0.5">{assure.numero}</p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statutColor[statut] || "bg-gray-100 text-gray-600 border-gray-200"}`}>
+                      <Shield className="w-3 h-3" />
+                      {statut.charAt(0) + statut.slice(1).toLowerCase()}
+                    </span>
+                    {assure.lien && (
+                      <span className="inline-block px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700 border border-blue-200">
+                        {assure.lien}
+                      </span>
+                    )}
+                    {assure.type && (
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${assure.type.toUpperCase() === "FAMILLE" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}>
+                        {assure.type.charAt(0).toUpperCase() + assure.type.slice(1).toLowerCase()}
+                      </span>
+                    )}
                   </div>
                 </>
               )}
@@ -113,41 +192,80 @@ export default function AssureDetailsPage() {
           </div>
         </Card>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Informations personnelles</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <span>{assure.telephone}</span>
+        <div className="grid md:grid-cols-2 gap-4">
+
+          {/* ── Données démographiques ── */}
+          <Card className="p-5 space-y-4">
+            <h3 className="font-semibold flex items-center gap-2 text-sm">
+              <User className="w-4 h-4 text-blue-500" /> Données personnelles
+            </h3>
+            {isEditing ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Date de naissance</Label>{inp("dateNaissance", "", "date")}</div>
+                  <div><Label className="text-xs">Sexe</Label>{sel("sexe", [{ value: "M", label: "Masculin" }, { value: "F", label: "Féminin" }])}</div>
+                </div>
+                <div><Label className="text-xs">N° pièce d'identité</Label>{inp("pieceIdentite", "1234567890001")}</div>
+                <div><Label className="text-xs">Téléphone</Label>{inp("telephone", "+221771234567", "tel")}</div>
+                <div><Label className="text-xs">Email</Label>{inp("email", "exemple@email.com", "email")}</div>
+                <div><Label className="text-xs">Adresse</Label>{inp("adresse", "Dakar, Sénégal")}</div>
               </div>
-              <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                <span>{assure.numero}@asc.fr</span>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <InfoRow label="Date de naissance" value={fmtDate(assure.dateNaissance)} />
+                <InfoRow label="Sexe" value={assure.sexe === "M" ? "Masculin" : assure.sexe === "F" ? "Féminin" : assure.sexe} />
+                <InfoRow label="N° pièce d'identité" value={assure.pieceIdentite} />
+                <InfoRow label="Téléphone" value={assure.telephone} />
+                <div className="col-span-2"><InfoRow label="Email" value={assure.email} /></div>
+                <div className="col-span-2"><InfoRow label="Adresse" value={assure.adresse} /></div>
               </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{assure.adresse || 'Dakar, Sénégal'}</span>
-              </div>
-            </div>
+            )}
           </Card>
 
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Informations d'assurance</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-muted-foreground">Numéro d'assuré</p>
-                <p className="font-mono font-semibold">{assure.numero}</p>
+          {/* ── Données d'assurance ── */}
+          <Card className="p-5 space-y-4">
+            <h3 className="font-semibold flex items-center gap-2 text-sm">
+              <Shield className="w-4 h-4 text-purple-500" /> Données d'assurance
+            </h3>
+            {isEditing ? (
+              <div className="space-y-3">
+                <div><Label className="text-xs">Lien avec l'adhérent</Label>
+                  {sel("lien", [
+                    { value: "Principal", label: "Principal" },
+                    { value: "Conjoint", label: "Conjoint(e)" },
+                    { value: "Enfant", label: "Enfant" },
+                    { value: "Autre", label: "Autre" },
+                  ])}
+                </div>
+                <div><Label className="text-xs">Date d'adhésion</Label>{inp("dateAdhesion", "", "date")}</div>
+                <div><Label className="text-xs">Salaire (FCFA)</Label>{inp("salaire", "500000")}</div>
+                <div><Label className="text-xs">Garantie</Label>
+                  {sel("garantie", [
+                    { value: "Standard", label: "Standard" },
+                    { value: "Premium", label: "Premium" },
+                    { value: "Gold", label: "Gold" },
+                  ])}
+                </div>
+                <div><Label className="text-xs">Statut</Label>
+                  {sel("statut", [
+                    { value: "ACTIF", label: "Actif" },
+                    { value: "SUSPENDU", label: "Suspendu" },
+                    { value: "RESILIE", label: "Résilié" },
+                  ])}
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Type de contrat</p>
-                <p className="font-semibold capitalize">{assure.type}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <InfoRow label="Numéro assuré" value={assure.numero} />
+                <InfoRow label="Type" value={assure.type} />
+                <InfoRow label="Lien" value={assure.lien} />
+                <InfoRow label="Date d'adhésion" value={fmtDate(assure.dateAdhesion || assure.dateDebut)} />
+                <InfoRow label="Salaire" value={assure.salaire ? `${Number(assure.salaire).toLocaleString("fr-FR")} F` : undefined} />
+                <InfoRow label="Garantie" value={assure.garantie} />
+                <InfoRow label="Prime" value={assure.prime ? `${Number(assure.prime).toLocaleString("fr-FR")} F` : undefined} />
+                <InfoRow label="Date fin" value={fmtDate(assure.dateFin)} />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Date d'adhésion</p>
-                <p>01/01/2023</p>
-              </div>
-            </div>
+            )}
           </Card>
         </div>
       </div>
