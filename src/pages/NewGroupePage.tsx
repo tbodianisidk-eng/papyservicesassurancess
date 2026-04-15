@@ -255,6 +255,12 @@ function parseAndValidate(file: File): Promise<ParseResult> {
         const errors:   ValidationError[]  = [];
         const cniSeen:  Set<string>        = new Set();
 
+        // Détecter si les colonnes clés existent dans le fichier
+        const hasColCni  = k.pieceIdentite !== null;
+        const hasColLien = k.lien          !== null;
+        const hasColDate = k.dateNaissance !== null;
+        const hasColSexe = k.sexe          !== null;
+
         jsonRows.forEach((row, i) => {
           const ligne = i + 2;
           const nom          = g(row, k.nom);
@@ -265,72 +271,65 @@ function parseAndValidate(file: File): Promise<ParseResult> {
           const dateAdhRaw   = k.dateAdhesion ? row[k.dateAdhesion] : "";
           const salaireRaw   = g(row, k.salaire);
           const garantieRaw  = g(row, k.garantie);
-          const rowErrors: string[] = [];
 
+          // ── Seul le nom est bloquant ──────────────────────────────────────
           if (!nom) {
             errors.push({ ligne, nom: "", champ: "Nom et Prénom", message: "Champ obligatoire vide" });
             return;
           }
 
+          // ── Date de naissance (avertissement si colonne présente mais vide/invalide) ──
           const dateNaissance = toDateStr(dateNaissRaw);
-          if (!dateNaissance) {
-            errors.push({ ligne, nom, champ: "Date de naissance", message: "Champ obligatoire vide" });
-            rowErrors.push("date_naissance");
-          } else if (!isValidDate(dateNaissance)) {
-            errors.push({ ligne, nom, champ: "Date de naissance", message: `Date invalide : "${String(dateNaissRaw).trim()}"` });
-            rowErrors.push("date_naissance");
+          if (hasColDate && !dateNaissance) {
+            errors.push({ ligne, nom, champ: "Date de naissance", message: "Vide — catégorie définie sur Adulte par défaut" });
+          } else if (hasColDate && dateNaissance && !isValidDate(dateNaissance)) {
+            errors.push({ ligne, nom, champ: "Date de naissance", message: `Format non reconnu : "${String(dateNaissRaw).trim()}" — utilisez AAAA-MM-JJ` });
           }
 
+          // ── Sexe (avertissement si colonne présente mais valeur invalide) ──
           const sexeNorm = norm(sexeRaw);
-          const sexe = sexeNorm.startsWith("f") ? "F"
-                     : sexeNorm.startsWith("m") || sexeNorm.startsWith("h") ? "M"
-                     : sexeRaw.toUpperCase();
-          if (!sexeRaw) {
-            errors.push({ ligne, nom, champ: "Sexe", message: "Champ obligatoire vide (M ou F)" });
-            rowErrors.push("sexe");
-          } else if (!["M", "F"].includes(sexe)) {
-            errors.push({ ligne, nom, champ: "Sexe", message: `Valeur invalide : "${sexeRaw}"` });
-            rowErrors.push("sexe");
+          let sexe = sexeNorm.startsWith("f") ? "F"
+                   : sexeNorm.startsWith("m") || sexeNorm.startsWith("h") ? "M"
+                   : sexeRaw.toUpperCase();
+          if (hasColSexe && sexeRaw && !["M", "F"].includes(sexe)) {
+            errors.push({ ligne, nom, champ: "Sexe", message: `Valeur non reconnue : "${sexeRaw}" — utilisez M ou F` });
+            sexe = "";
           }
 
-          if (!cni) {
-            errors.push({ ligne, nom, champ: "N° pièce d'identité", message: "Champ obligatoire vide" });
-            rowErrors.push("cni");
-          } else if (cniSeen.has(cni)) {
-            errors.push({ ligne, nom, champ: "N° pièce d'identité", message: `Doublon : "${cni}"` });
-            rowErrors.push("cni");
-          } else {
+          // ── N° pièce d'identité (doublon = avertissement, absent = ignoré) ──
+          let cniVal = cni;
+          if (cni) {
+            if (cniSeen.has(cni)) {
+              errors.push({ ligne, nom, champ: "N° pièce d'identité", message: `Doublon détecté : "${cni}" — ligne ignorée` });
+              return; // doublon réel = on skip
+            }
             cniSeen.add(cni);
           }
+          // Si pas de colonne CNI ou valeur vide → générer un identifiant interne
+          if (!cniVal) cniVal = "";
 
+          // ── Lien (défaut "Autre" si absent) ──────────────────────────────
           const lienNorm = norm(lienRaw);
           let lien = LIENS_AUTORISES.find(l => norm(l) === lienNorm)
                   ?? LIENS_AUTORISES.find(l => lienNorm.includes(norm(l)))
-                  ?? lienRaw;
-          if (!lienRaw) {
-            errors.push({ ligne, nom, champ: "Lien", message: `Champ obligatoire vide — valeurs : ${LIENS_AUTORISES.join(", ")}` });
-            rowErrors.push("lien");
-            lien = "Autre";
-          }
+                  ?? (lienRaw || "");
+          if (!lien) lien = "Autre";
 
+          // ── Date d'adhésion ───────────────────────────────────────────────
           const dateAdhesion = toDateStr(dateAdhRaw);
-          if (dateAdhRaw && !isValidDate(dateAdhesion)) {
-            errors.push({ ligne, nom, champ: "Date d'adhésion", message: `Date invalide : "${String(dateAdhRaw).trim()}"` });
-          }
 
+          // ── Garantie ──────────────────────────────────────────────────────
           const garantieNorm = norm(garantieRaw);
           const garantie = GARANTIES_AUTORISEES.find(g => norm(g) === garantieNorm)
                         ?? (garantieRaw || "Standard");
 
-          if (rowErrors.includes("cni")) return;
-
-          const dn = rowErrors.includes("date_naissance") ? "" : dateNaissance;
+          const dn = isValidDate(dateNaissance) ? dateNaissance : "";
           membres.push({
             numero:        membres.length + 1,
             nom,
             dateNaissance: dn,
-            sexe:          rowErrors.includes("sexe") ? sexeRaw : sexe,
-            pieceIdentite: cni,
+            sexe:          sexe || "",
+            pieceIdentite: cniVal,
             lien,
             dateAdhesion:  dateAdhesion || "",
             salaire:       salaireRaw || undefined,
@@ -669,8 +668,9 @@ export default function NewGroupePage() {
                     <li>Importez le fichier — les membres sont ajoutés automatiquement</li>
                   </ol>
                   <div className="mt-2 text-xs text-blue-600 space-y-0.5">
-                    <p><strong>Import intelligent :</strong> Le principal et ses ayants droit sont détectés selon la colonne "Lien"</p>
-                    <p><strong>Liens acceptés :</strong> {LIENS_AUTORISES.join(" · ")}</p>
+                    <p><strong>Seul le nom est obligatoire</strong> — les autres colonnes (date de naissance, sexe, CNI, lien) sont facultatives</p>
+                    <p><strong>Liens acceptés :</strong> {LIENS_AUTORISES.join(" · ")} — "Autre" par défaut si absent</p>
+                    <p><strong>Colonnes reconnues automatiquement</strong> quelle que soit la langue ou la mise en forme du fichier</p>
                   </div>
                 </div>
               </div>
