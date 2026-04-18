@@ -20,7 +20,7 @@ interface Chapitre {
   articles: Article[];
 }
 
-const CHAPITRES: Chapitre[] = [
+export const CHAPITRES: Chapitre[] = [
   {
     numero: "1",
     titre:  "Étendue de la garantie",

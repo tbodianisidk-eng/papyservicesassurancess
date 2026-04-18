@@ -625,24 +625,6 @@ export default function NewFamillePage() {
                 </div>
               </div>
 
-              {/* Calcul direct : part remboursée par personne/an */}
-              {tauxRemboursement > 0 && (tarifs.primeEnfant > 0 || tarifs.primeAdulte > 0 || tarifs.primeAdulteAge > 0) && (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3 grid grid-cols-3 gap-3 text-xs">
-                  {[
-                    { label: "Enfant", prime: tarifs.primeEnfant },
-                    { label: "Adulte", prime: tarifs.primeAdulte },
-                    { label: "Âgé",   prime: tarifs.primeAdulteAge },
-                  ].map(({ label, prime }) => (
-                    <div key={label} className="text-center">
-                      <p className="font-semibold text-green-800">{label}</p>
-                      <p className="font-mono font-bold text-green-700 text-sm mt-0.5">
-                        {prime > 0 ? Math.round(prime * tauxRemboursement / 100).toLocaleString("fr-FR") + " FCFA" : "—"}
-                      </p>
-                      <p className="text-green-600 mt-0.5">remboursé / pers. / an</p>
-                    </div>
-                  ))}
-                </div>
-              )}
             </section>
 
             {/* ── Territorialité ────────────────────────────────────────── */}

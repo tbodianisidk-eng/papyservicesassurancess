@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Search, Building2, Users, TrendingUp, Pencil, Trash2,
-  Calendar, RefreshCw, ShieldCheck, ChevronDown, ChevronUp, ArrowRightLeft,
+  Calendar, RefreshCw, ShieldCheck, ChevronDown, ChevronUp, ArrowRightLeft, FileText,
 } from "lucide-react";
 import { MouvementModal } from "@/components/MouvementModal";
 import { motion } from "framer-motion";
@@ -16,6 +16,7 @@ import {
   getGarantiesCNART, REAJUSTEMENT_SP,
   typeFromDate, TYPE_COLORS,
 } from "./NewFamillePage";
+import { CHAPITRES } from "./ConditionsGeneralesPage";
 import { getTarifs } from "@/services/tarifService";
 import { calcDecomptePopulation, type MembrePopulation } from "./NewGroupePage";
 
@@ -102,6 +103,8 @@ export default function MaladieGroupePage() {
   const [search, setSearch]             = useState("");
   const [showGaranties, setShowGaranties] = useState(false);
   const [showReajust, setShowReajust]     = useState(false);
+  const [showCG,      setShowCG]          = useState(false);
+  const [openChap,    setOpenChap]        = useState<string | null>(null);
   const [expandedGroupe, setExpandedGroupe]     = useState<number | null>(null);
   const [mouvementGroupe, setMouvementGroupe]   = useState<any | null>(null);
   const tarifs = getTarifs();
@@ -273,6 +276,55 @@ export default function MaladieGroupePage() {
                   ))}
                 </tbody>
               </table>
+            </motion.div>
+          )}
+        </Card>
+
+        {/* ── Conditions Générales ── */}
+        <Card className="overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowCG(!showCG)}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <div className="text-left">
+                <p className="font-semibold text-sm">Conditions Générales</p>
+                <p className="text-xs text-muted-foreground">{CHAPITRES.length} chapitres — Garanties, délais, exclusions, résiliation…</p>
+              </div>
+            </div>
+            {showCG ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {showCG && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-t divide-y divide-border">
+              {CHAPITRES.map((chap) => (
+                <div key={chap.numero}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenChap(openChap === chap.numero ? null : chap.numero)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <span className="font-semibold text-sm text-blue-700">
+                      Chapitre {chap.numero} — {chap.titre}
+                    </span>
+                    {openChap === chap.numero
+                      ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                      : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                    }
+                  </button>
+                  {openChap === chap.numero && (
+                    <div className="px-4 pb-4 space-y-4 bg-gray-50/50">
+                      {chap.articles.map((art, ai) => (
+                        <div key={ai}>
+                          <p className="font-semibold text-xs text-gray-700 uppercase tracking-wide mb-2">{art.titre}</p>
+                          <div className="text-sm text-gray-600">{art.contenu}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </motion.div>
           )}
         </Card>
