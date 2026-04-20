@@ -501,6 +501,31 @@ export default function MaladieFamillePage() {
                           </div>
                         </div>
 
+                        {/* Actions principales toujours visibles */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <Button
+                            onClick={() => setMouvementFamille(famille)}
+                            variant="outline" size="sm" className="text-xs h-8 border-blue-300 text-blue-700 hover:bg-blue-50"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
+                            <span>Mouvement</span>
+                          </Button>
+                          <Button
+                            onClick={() => navigate(`/maladie-famille/new?id=${famille.id}`)}
+                            variant="outline" size="sm" className="text-xs h-8"
+                          >
+                            <Pencil className="w-3.5 h-3.5 mr-1" />
+                            <span>Modifier</span>
+                          </Button>
+                          <Button
+                            onClick={() => onDelete(famille.id)}
+                            variant="destructive" size="sm" className="text-xs h-8"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            <span>Supprimer</span>
+                          </Button>
+                        </div>
+
                         {/* Toggle décompte détaillé */}
                         <button
                           type="button"
@@ -540,30 +565,6 @@ export default function MaladieFamillePage() {
                           </motion.div>
                         )}
 
-                        {/* Actions */}
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            onClick={() => setMouvementFamille(famille)}
-                            variant="outline" size="sm" className="text-xs h-8 border-blue-300 text-blue-700 hover:bg-blue-50"
-                          >
-                            <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
-                            <span>Mouvement</span>
-                          </Button>
-                          <Button
-                            onClick={() => navigate(`/maladie-famille/new?id=${famille.id}`)}
-                            variant="outline" size="sm" className="text-xs h-8"
-                          >
-                            <Pencil className="w-3.5 h-3.5 mr-1" />
-                            <span>Modifier</span>
-                          </Button>
-                          <Button
-                            onClick={() => onDelete(famille.id)}
-                            variant="destructive" size="sm" className="text-xs h-8"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
-                            <span>Supprimer</span>
-                          </Button>
-                        </div>
                       </div>
                     </div>
                   </div>

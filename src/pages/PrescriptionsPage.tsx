@@ -35,55 +35,167 @@ export default function PrescriptionsPage() {
   });
 
   const downloadPrescription = (p: any) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 800;
-    canvas.height = 900;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, 800, 900);
-    ctx.fillStyle = "#2563eb";
-    ctx.fillRect(0, 0, 800, 110);
-    ctx.fillStyle = "white";
-    ctx.font = "bold 28px Arial";
-    ctx.fillText("ORDONNANCE MÉDICALE", 50, 50);
-    ctx.font = "16px Arial";
-    ctx.fillText("Assurance Santé Connect", 50, 85);
-    ctx.fillStyle = "black";
-    ctx.font = "bold 15px Arial";
-    ctx.fillText(`Patient : ${assureNom(p) || "—"}`, 50, 150);
-    ctx.fillText(`Médecin : ${p.consultation?.prestataire?.nom || "—"}`, 50, 180);
-    ctx.fillText(`Date : ${p.createdAt ? new Date(p.createdAt).toLocaleDateString("fr-FR") : "—"}`, 50, 210);
-    ctx.strokeStyle = "#2563eb";
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(50, 235); ctx.lineTo(750, 235); ctx.stroke();
-    ctx.font = "bold 17px Arial";
-    ctx.fillText("MÉDICAMENT PRESCRIT :", 50, 270);
-    ctx.font = "bold 15px Arial";
-    ctx.fillText(p.medicament || "—", 70, 305);
-    ctx.font = "14px Arial";
-    ctx.fillText(`Dosage : ${p.dosage || "—"}`, 70, 335);
-    ctx.fillText(`Durée : ${p.duree || "—"}`, 70, 360);
-    if (p.instructions) {
-      ctx.font = "bold 15px Arial";
-      ctx.fillText("Instructions :", 50, 410);
-      ctx.font = "14px Arial";
-      ctx.fillText(p.instructions, 70, 440);
-    }
-    ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(450, 750); ctx.lineTo(700, 750); ctx.stroke();
-    ctx.font = "12px Arial"; ctx.fillStyle = "#555";
-    ctx.fillText("Signature du prescripteur", 490, 770);
-    ctx.fillStyle = "#888"; ctx.font = "10px Arial";
-    ctx.fillText("Ordonnance valable 30 jours", 50, 870);
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = `ordonnance-${p.id}.png`; a.click();
-        URL.revokeObjectURL(url);
-      }
-    });
+    const nom          = (() => { const a = p.consultation?.assure; return a ? `${a.nom} ${a.prenom}` : "—"; })();
+    const medecin      = p.consultation?.prestataire?.nom ?? "—";
+    const spec         = p.consultation?.prestataire?.specialite ?? "";
+    const tel          = p.consultation?.assure?.telephone ?? "";
+    const prestLogo    = p.consultation?.prestataire?.logo ?? "";
+    const date         = p.createdAt ? new Date(p.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+    const num          = `ORD-${String(p.id ?? "???").padStart(4, "0")}`;
+    const origin       = window.location.origin;
+
+    const win = window.open("", "", "width=860,height=1050");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>Ordonnance ${num}</title>
+      <meta charset="utf-8"/>
+      <style>
+        @page { margin:0; size:A4; }
+        *{ margin:0; padding:0; box-sizing:border-box; }
+        body{ font-family:'Segoe UI',Arial,sans-serif; color:#1e293b; background:#fff; }
+        .page{ width:210mm; min-height:297mm; display:flex; }
+        .sidebar{ width:58mm; background:#1d4ed8; color:#fff; padding:28px 16px; display:flex; flex-direction:column; gap:18px; }
+        .logos-row{ display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap; }
+        .logo-item{ text-align:center; flex:1; min-width:60px; }
+        .logo-item img{ width:54px; border-radius:8px; background:#fff; padding:5px; }
+        .logo-item .logo-name{ font-size:7pt; opacity:.85; margin-top:4px; line-height:1.3; font-weight:600; }
+        .logo-divider{ width:1px; height:50px; background:rgba(255,255,255,.3); }
+        .sidebar-brand{ margin-top:8px; text-align:center; }
+        .sidebar-brand h2{ font-size:10.5pt; font-weight:800; line-height:1.2; }
+        .sidebar-brand p{ font-size:7.5pt; opacity:.8; margin-top:3px; line-height:1.4; }
+        .sidebar-sep{ border:none; border-top:1px solid rgba(255,255,255,.25); }
+        .sidebar-section h3{ font-size:6.5pt; text-transform:uppercase; letter-spacing:1px; opacity:.65; margin-bottom:7px; font-weight:700; }
+        .sidebar-section p{ font-size:8.5pt; line-height:1.5; }
+        .sidebar-section .val{ font-weight:700; font-size:9pt; }
+        .badge-valid{ margin-top:auto; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:10px 12px; text-align:center; }
+        .badge-valid p{ font-size:7.5pt; line-height:1.5; opacity:.9; }
+        .badge-valid strong{ font-size:9pt; display:block; margin-bottom:2px; }
+        .main{ flex:1; padding:28px 24px; display:flex; flex-direction:column; }
+        .main-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; padding-bottom:14px; border-bottom:3px solid #1d4ed8; }
+        .main-header h1{ font-size:19pt; font-weight:900; color:#1d4ed8; letter-spacing:-0.5px; line-height:1.1; }
+        .main-header .sub{ font-size:7.5pt; color:#64748b; margin-top:4px; }
+        .ord-badge{ background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:5px 12px; text-align:right; }
+        .ord-badge .num{ font-family:monospace; font-size:10pt; font-weight:800; color:#1d4ed8; }
+        .ord-badge .dt{ font-size:7.5pt; color:#64748b; margin-top:2px; }
+        .info-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+        .info-box{ border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; }
+        .info-box.patient{ border-left:3.5px solid #2563eb; background:#eff6ff; }
+        .info-box.medecin{ border-left:3.5px solid #7c3aed; background:#f5f3ff; }
+        .info-box .lbl{ font-size:6.5pt; text-transform:uppercase; letter-spacing:.8px; font-weight:700; color:#94a3b8; margin-bottom:3px; }
+        .info-box .val{ font-size:10.5pt; font-weight:800; color:#1e293b; }
+        .info-box .sub{ font-size:7.5pt; color:#64748b; margin-top:2px; }
+        .rx-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+        .rx-sym{ font-family:Georgia,serif; font-size:26pt; font-weight:700; color:#1d4ed8; line-height:1; }
+        .rx-title{ font-size:11.5pt; font-weight:800; color:#1e293b; }
+        .med-card{ border:1.5px solid #93c5fd; border-left:5px solid #1d4ed8; border-radius:10px; padding:14px 16px; background:#f0f7ff; margin-bottom:14px; }
+        .med-name{ font-size:14pt; font-weight:900; color:#1d4ed8; margin-bottom:10px; }
+        .med-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .med-item .dl{ font-size:7pt; text-transform:uppercase; letter-spacing:.6px; color:#94a3b8; font-weight:700; margin-bottom:2px; }
+        .med-item .dv{ font-size:10pt; font-weight:700; color:#1e293b; }
+        .instructions-box{ border:1.5px solid #fde68a; background:#fffbeb; border-radius:10px; padding:12px 14px; margin-bottom:16px; }
+        .instructions-box .il{ font-size:7pt; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#92400e; margin-bottom:5px; }
+        .instructions-box .iv{ font-size:9pt; color:#78350f; line-height:1.5; }
+        .spacer{ flex:1; min-height:20px; }
+        .sign-row{ display:flex; justify-content:flex-end; padding-top:14px; border-top:1px solid #e2e8f0; margin-bottom:12px; }
+        .sign-block{ text-align:center; width:180px; }
+        .sign-line{ border-top:2px solid #1d4ed8; margin-bottom:6px; height:36px; }
+        .sign-lbl{ font-size:7.5pt; color:#64748b; }
+        .footer{ display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px dashed #cbd5e1; }
+        .footer .validity{ font-size:7.5pt; color:#94a3b8; font-style:italic; }
+        .stamp-circle{ width:72px; height:72px; border-radius:50%; border:2px dashed #cbd5e1; }
+      </style>
+    </head><body>
+    <div class="page">
+      <div class="sidebar">
+        <div class="logos-row">
+          <div class="logo-item">
+            <img src="${origin}/logo.png" alt="ASC" onerror="this.style.display='none'" />
+            <div class="logo-name">Assurance<br/>Santé Connect</div>
+          </div>
+          ${prestLogo ? `
+          <div class="logo-divider"></div>
+          <div class="logo-item">
+            <img src="${prestLogo}" alt="${medecin}" onerror="this.style.display='none'" />
+            <div class="logo-name">${medecin}</div>
+          </div>` : `
+          <div class="logo-divider"></div>
+          <div class="logo-item">
+            <div class="logo-name" style="font-size:8.5pt;font-weight:800;opacity:1;">${medecin}</div>
+            ${spec ? `<div class="logo-name">${spec}</div>` : ""}
+          </div>`}
+        </div>
+        <hr class="sidebar-sep"/>
+        <div class="sidebar-section">
+          <h3>Numéro</h3>
+          <p class="val">${num}</p>
+        </div>
+        <div class="sidebar-section">
+          <h3>Date d'émission</h3>
+          <p class="val">${date}</p>
+        </div>
+        ${p.consultation?.motif ? `<div class="sidebar-section"><h3>Motif</h3><p>${p.consultation.motif}</p></div>` : ""}
+        <div class="badge-valid">
+          <strong>⏱ Validité</strong>
+          <p>Ordonnance valable<br/><strong>30 jours</strong> à compter de la date d'émission</p>
+        </div>
+      </div>
+      <div class="main">
+        <div class="main-header">
+          <div>
+            <h1>ORDONNANCE<br/>MÉDICALE</h1>
+            <p class="sub">République du Sénégal — Ministère de la Santé et de l'Action Sociale</p>
+          </div>
+          <div class="ord-badge">
+            <div class="num">${num}</div>
+            <div class="dt">${date}</div>
+          </div>
+        </div>
+        <div class="info-grid">
+          <div class="info-box patient">
+            <div class="lbl">Patient</div>
+            <div class="val">${nom}</div>
+            ${tel ? `<div class="sub">${tel}</div>` : ""}
+          </div>
+          <div class="info-box medecin">
+            <div class="lbl">Dr</div>
+            <div class="val">${medecin}</div>
+            ${spec ? `<div class="sub">${spec}</div>` : ""}
+          </div>
+        </div>
+        <div class="rx-header">
+          <div class="rx-sym">&#8478;</div>
+          <div class="rx-title">Médicament prescrit</div>
+        </div>
+        <div class="med-card">
+          <div class="med-name">${p.medicament || "—"}</div>
+          <div class="med-grid">
+            <div class="med-item">
+              <div class="dl">Posologie / Dosage</div>
+              <div class="dv">${p.dosage || "—"}</div>
+            </div>
+            <div class="med-item">
+              <div class="dl">Durée du traitement</div>
+              <div class="dv">${p.duree || "—"}</div>
+            </div>
+          </div>
+        </div>
+        ${p.instructions ? `<div class="instructions-box"><div class="il">Instructions particulières</div><div class="iv">${p.instructions}</div></div>` : ""}
+        <div class="spacer"></div>
+        <div class="sign-row">
+          <div class="sign-block">
+            <div class="sign-line"></div>
+            <div class="sign-lbl">Signature et cachet</div>
+          </div>
+        </div>
+        <div class="footer">
+          <div class="validity">Assurance Santé Connect — Tél : +221 33 123 45 67<br/>Cette ordonnance est valable 30 jours à compter de la date d'émission</div>
+          <div class="stamp-circle"></div>
+        </div>
+      </div>
+    </div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); win.close(); }, 400);
   };
 
   return (

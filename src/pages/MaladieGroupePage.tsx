@@ -444,6 +444,31 @@ export default function MaladieGroupePage() {
                           </div>
                         </div>
 
+                        {/* Actions principales toujours visibles */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <Button
+                            onClick={() => setMouvementGroupe(groupe)}
+                            variant="outline" size="sm" className="text-xs h-8 border-blue-300 text-blue-700 hover:bg-blue-50"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
+                            <span>Mouvement</span>
+                          </Button>
+                          <Button
+                            onClick={() => navigate(`/maladie-groupe/new?id=${groupe.id}`)}
+                            variant="outline" size="sm" className="text-xs h-8"
+                          >
+                            <Pencil className="w-3.5 h-3.5 mr-1" />
+                            <span>Modifier</span>
+                          </Button>
+                          <Button
+                            onClick={() => onDelete(groupe.id)}
+                            variant="destructive" size="sm" className="text-xs h-8"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            <span>Supprimer</span>
+                          </Button>
+                        </div>
+
                         {/* Toggle décompte */}
                         <button
                           type="button"
@@ -522,30 +547,6 @@ export default function MaladieGroupePage() {
                           </motion.div>
                         )}
 
-                        {/* Actions */}
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            onClick={() => setMouvementGroupe(groupe)}
-                            variant="outline" size="sm" className="text-xs h-8 border-blue-300 text-blue-700 hover:bg-blue-50"
-                          >
-                            <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
-                            <span>Mouvement</span>
-                          </Button>
-                          <Button
-                            onClick={() => navigate(`/maladie-groupe/new?id=${groupe.id}`)}
-                            variant="outline" size="sm" className="text-xs h-8"
-                          >
-                            <Pencil className="w-3.5 h-3.5 mr-1" />
-                            <span>Modifier</span>
-                          </Button>
-                          <Button
-                            onClick={() => onDelete(groupe.id)}
-                            variant="destructive" size="sm" className="text-xs h-8"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
-                            <span>Supprimer</span>
-                          </Button>
-                        </div>
                       </div>
                     </div>
                   </div>
