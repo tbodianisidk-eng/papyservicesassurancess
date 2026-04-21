@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { motion } from "framer-motion";
 import ClaudeChat from "@/components/ClaudeChat";
 import { chatConditionsGenerales, ClaudeMessage } from "@/services/claudeService";
 
@@ -456,42 +454,19 @@ const NAV_SECTIONS = [
 // ─── Composant articles collapsibles ─────────────────────────────────────────
 
 function ChapitreSection({ ch }: { ch: Chapitre }) {
-  const [openArticles, setOpenArticles] = useState<Set<number>>(new Set());
-
-  const toggleArticle = (i: number) => {
-    setOpenArticles(prev => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-  };
-
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <h2 className="text-lg font-bold text-gray-900 mb-3">
         {ch.numero !== "CS" ? `Chapitre ${ch.numero} — ` : ""}{ch.titre}
       </h2>
       {ch.articles.map((art, i) => (
         <Card key={i} className="overflow-hidden">
-          <button
-            type="button"
-            onClick={() => toggleArticle(i)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-left transition-colors"
-          >
-            <span className="font-semibold text-sm">{art.titre}</span>
-            {openArticles.has(i)
-              ? <ChevronUp className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-              : <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />}
-          </button>
-          {openArticles.has(i) && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="border-t px-4 pb-4 pt-3 text-muted-foreground"
-            >
-              {art.contenu}
-            </motion.div>
-          )}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <span className="font-semibold text-sm text-gray-900">{art.titre}</span>
+          </div>
+          <div className="px-4 pb-4 pt-3 text-muted-foreground">
+            {art.contenu}
+          </div>
         </Card>
       ))}
     </div>
@@ -549,10 +524,10 @@ export default function ConditionsGeneralesPage() {
         </div>
       </div>
 
-      {/* Barre chapitres — sticky sous la navbar flottante */}
-      <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 mt-16">
+      {/* Barre chapitres — fixe sous la navbar flottante */}
+      <div className="fixed top-[64px] left-1/2 -translate-x-1/2 z-50 w-[min(900px,calc(100vw-2rem))] bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm">
         <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="flex items-center gap-1 px-6 py-2 min-w-max">
+          <div className="flex items-center gap-1 px-4 py-2 min-w-max">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide mr-2">Chapitres :</span>
             {NAV_SECTIONS.map(({ id, label }) => (
               <button
@@ -571,8 +546,8 @@ export default function ConditionsGeneralesPage() {
         </div>
       </div>
 
-      {/* Contenu */}
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-14">
+      {/* Contenu — padding-top pour les deux barres fixes */}
+      <div className="max-w-4xl mx-auto px-4 pt-32 pb-10 space-y-14">
 
         {/* Intro */}
         <div className="text-center border-b border-gray-200 pb-8">
