@@ -510,13 +510,35 @@ export default function ConditionsGeneralesPage() {
     if (el) scrollRef.current?.scrollTo({ top: el.offsetTop - 110, behavior: "smooth" });
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    // Expand container so all content is visible for print
+    el.style.height = "auto";
+    el.style.overflowY = "visible";
+
+    // Inject print styles: hide fixed UI elements
+    const style = document.createElement("style");
+    style.id = "__cg_print__";
+    style.textContent = `@media print { [data-noprint] { display: none !important; } }`;
+    document.head.appendChild(style);
+
+    window.print();
+
+    // Restore after dialog closes
+    setTimeout(() => {
+      el.style.height = "100vh";
+      el.style.overflowY = "auto";
+      document.getElementById("__cg_print__")?.remove();
+    }, 500);
+  };
 
   return (
     <div ref={scrollRef} style={{ overflowY: "auto", height: "100vh" }}>
 
       {/* ── Navbar shrink ─────────────────────────────────────────────────── */}
-      <div className={`fixed left-1/2 -translate-x-1/2 z-[100] bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm flex items-center px-4 transition-all duration-300 ${
+      <div data-noprint className={`fixed left-1/2 -translate-x-1/2 z-[100] bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm flex items-center px-4 transition-all duration-300 ${
         scrolled
           ? "top-2 w-[min(520px,calc(100vw-2rem))] h-10"
           : "top-3 w-[min(860px,calc(100vw-2rem))] h-12"
@@ -546,7 +568,7 @@ export default function ConditionsGeneralesPage() {
       </div>
 
       {/* ── Barre chapitres fixe ──────────────────────────────────────────── */}
-      <div className={`fixed left-1/2 -translate-x-1/2 z-50 w-[min(900px,calc(100vw-2rem))] bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm transition-all duration-300 ${
+      <div data-noprint className={`fixed left-1/2 -translate-x-1/2 z-50 w-[min(900px,calc(100vw-2rem))] bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm transition-all duration-300 ${
         scrolled ? "top-[52px]" : "top-[64px]"
       }`}>
         <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -586,7 +608,7 @@ export default function ConditionsGeneralesPage() {
             <div><span className="text-gray-400 text-xs uppercase tracking-wide block">Émetteur</span><span className="font-semibold text-gray-800">Papy Services Assurances</span></div>
           </div>
           {/* Boutons PDF */}
-          <div className="px-6 py-4 flex flex-wrap gap-3 border-t border-gray-100 bg-white">
+          <div data-noprint className="px-6 py-4 flex flex-wrap gap-3 border-t border-gray-100 bg-white">
             <button onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm">
               <Download size={15} /> Télécharger le PDF
@@ -631,7 +653,7 @@ export default function ConditionsGeneralesPage() {
       </div>
 
       {/* ── Footer sobre ──────────────────────────────────────────────────── */}
-      <footer className="border-t border-gray-200 bg-gray-50 py-8 px-4">
+      <footer data-noprint className="border-t border-gray-200 bg-gray-50 py-8 px-4">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src="/logo1.png" alt="Logo" className="h-7 w-auto object-contain" />
