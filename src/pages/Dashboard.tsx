@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import AppLayout from '@/components/AppLayout';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, updateSessionActivity, type SessionEntry } from '@/context/AuthContext';
 import { apiClient } from '@/services/apiClient';
 import { DataService } from '@/services/dataService';
 
@@ -71,6 +71,31 @@ function formatMontant(val: number): string {
   return String(val);
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const PROFILE_KEY = (id: string) => `user_profile_${id}`;
+
+function getDisplayName(user: any): string {
+  if (!user) return 'Utilisateur';
+  try {
+    const saved = user.id ? localStorage.getItem(PROFILE_KEY(user.id)) : null;
+    if (saved) {
+      const p = JSON.parse(saved);
+      const name = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim();
+      if (name) return name;
+    }
+  } catch {}
+  return user.full_name || user.fullName || user.email || 'Utilisateur';
+}
+
+function formatRelative(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60)   return 'À l\'instant';
+  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`;
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+}
+
 // ─── Dashboard Header ─────────────────────────────────────────────────────────
 
 function DashboardHeader({ user, onRefresh }: { user: any; onRefresh: () => void }) {
@@ -82,18 +107,20 @@ function DashboardHeader({ user, onRefresh }: { user: any; onRefresh: () => void
   const timeLabel = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
   const roleLabel = user?.role === "admin" ? "Administrateur"
-    : user?.role === "agent" ? "Agent"
+    : user?.role === "prestataire" ? "Prestataire"
     : user?.role === "client" ? "Client"
     : "Utilisateur";
+
+  const displayName = getDisplayName(user);
 
   return (
     <div className="flex items-center justify-between gap-4 pb-4 border-b border-border/60">
       <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            {user?.full_name || roleLabel}
+            {displayName}
           </h1>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-brand/10 text-brand border border-brand/20">
             {roleLabel}
           </span>
         </div>
@@ -115,6 +142,82 @@ function DashboardHeader({ user, onRefresh }: { user: any; onRefresh: () => void
         <RefreshCw size={15} />
       </button>
     </div>
+  );
+}
+
+// ─── Connected Users (admin only) ────────────────────────────────────────────
+
+function ConnectedUsers({ sessions }: { sessions: SessionEntry[] }) {
+  const ROLE_LABEL: Record<string, string> = { admin: 'Admin', prestataire: 'Prestataire', client: 'Client' };
+  const ROLE_COLOR: Record<string, string> = {
+    admin:       'bg-brand/10 text-brand',
+    prestataire: 'bg-purple-100 text-purple-700',
+    client:      'bg-emerald-100 text-emerald-700',
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.55 }}
+      className="bg-card rounded-xl border border-border shadow-sm overflow-hidden"
+    >
+      <div className="px-4 sm:px-5 py-4 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <h3 className="font-semibold text-sm sm:text-base text-gray-900">Utilisateurs connectés</h3>
+        </div>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          {sessions.length} en ligne
+        </span>
+      </div>
+      {sessions.length > 0 ? (
+        <ul className="divide-y divide-border">
+          {sessions.map((s, idx) => {
+            const initials = s.name.split(' ').map(w => w[0] ?? '').join('').toUpperCase().slice(0, 2) || '??';
+            return (
+              <motion.li
+                key={s.userId}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.55 + idx * 0.04 }}
+                className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-muted/40 transition-colors"
+              >
+                <div className="relative shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold">
+                    {initials}
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium text-gray-900 truncate">{s.name}</p>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${ROLE_COLOR[s.role] || 'bg-gray-100 text-gray-600'}`}>
+                      {ROLE_LABEL[s.role] || s.role}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                </div>
+                <div className="shrink-0 text-right space-y-0.5">
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1 justify-end">
+                    <Clock size={10} />
+                    Connecté {formatRelative(s.loginTime)}
+                  </p>
+                  <p className="text-[10px] text-green-600 flex items-center gap-1 justify-end">
+                    <Activity size={10} />
+                    Actif {formatRelative(s.lastActivity)}
+                  </p>
+                </div>
+              </motion.li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+          Aucun utilisateur connecté
+        </div>
+      )}
+    </motion.div>
   );
 }
 
@@ -163,7 +266,7 @@ function buildClientStats(polices: any[], sinistres: any[], prescriptions: any[]
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, getActiveSessions } = useAuth();
   const isAdmin  = user?.role === 'admin';
   const isClient = user?.role === 'client';
 
@@ -172,6 +275,18 @@ export default function Dashboard() {
   const [apiError, setApiError]       = useState(false);
   const [clientStats, setClientStats] = useState<ClientStats | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
+  const [sessions, setSessions]       = useState<SessionEntry[]>([]);
+
+  // Mise à jour de la session active + rafraîchissement toutes les 30 s
+  useEffect(() => {
+    if (user?.id) updateSessionActivity(user.id);
+    if (isAdmin)  setSessions(getActiveSessions());
+    const interval = setInterval(() => {
+      if (user?.id) updateSessionActivity(user.id);
+      if (isAdmin)  setSessions(getActiveSessions());
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [user?.id, isAdmin]);
 
   const fetchStats = useCallback(() => {
     setLoading(true);
@@ -225,7 +340,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={fetchStats}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors"
           >
             <RefreshCw size={15} />
             Réessayer
@@ -555,6 +670,9 @@ export default function Dashboard() {
                 )}
               </motion.div>
             </div>
+
+            {/* ── Utilisateurs connectés (admin) ──────────────────────── */}
+            {isAdmin && <ConnectedUsers sessions={sessions} />}
 
             {/* ── Recent activity ─────────────────────────────────────── */}
             <motion.div

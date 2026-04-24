@@ -10,16 +10,23 @@ import { useAuth } from "@/context/AuthContext";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { getTarifs, saveTarifs, TARIF_DEFAULTS, type TarifSettings } from "@/services/tarifService";
 
+const PROFILE_KEY = (id: string) => `user_profile_${id}`;
+
 export default function AdminProfilePage() {
   const { user, updatePhoto } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    nom: user?.full_name?.split(' ')[1] || "Utilisateur",
-    prenom: user?.full_name?.split(' ')[0] || "",
-    email: user?.email || "",
-    telephone: "+221 77 527 97 27",
-    adresse: "Rufisque Ouest, Cité Poste, Lot N°67",
-    role: user?.role === 'admin' ? 'Administrateur' : user?.role === 'prestataire' ? 'Prestataire' : 'Client'
+
+  const [formData, setFormData] = useState(() => {
+    const saved = user?.id ? localStorage.getItem(PROFILE_KEY(user.id)) : null;
+    if (saved) return JSON.parse(saved);
+    return {
+      nom:       user?.full_name?.split(' ').slice(1).join(' ') || "Utilisateur",
+      prenom:    user?.full_name?.split(' ')[0] || "",
+      email:     user?.email || "",
+      telephone: "+221 77 527 97 27",
+      adresse:   "Rufisque Ouest, Cité Poste, Lot N°67",
+      role:      user?.role === 'admin' ? 'Administrateur' : user?.role === 'prestataire' ? 'Prestataire' : 'Client',
+    };
   });
 
   const initials = (user?.full_name || user?.email || 'U')
@@ -37,6 +44,9 @@ export default function AdminProfilePage() {
   });
 
   const handleSave = () => {
+    if (user?.id) {
+      localStorage.setItem(PROFILE_KEY(user.id), JSON.stringify(formData));
+    }
     toast.success("Profil mis à jour avec succès");
     setIsEditing(false);
   };
