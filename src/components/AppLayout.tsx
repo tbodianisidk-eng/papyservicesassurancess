@@ -7,7 +7,6 @@ import { NotificationSystem } from "@/components/NotificationSystem";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataService } from "@/services/dataService";
-import { AIChatbot } from "@/components/AIChatbot";
 import { LiveChat } from "@/components/LiveChat";
 import { useAuth } from "@/context/AuthContext";
 
@@ -285,9 +284,6 @@ export default function AppLayout({ children, title, subHeader }: AppLayoutProps
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* ── AI Chatbot ─────────────────────────────────────────────────── */}
-      <AIChatbot />
 
       {/* ── Live Chat support ──────────────────────────────────────────── */}
       <LiveChat />

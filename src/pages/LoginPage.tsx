@@ -223,7 +223,7 @@ const LoginPage = () => {
                     Créer un compte
                   </button>
                 </p>
-                <button type="button" onClick={() => navigate('/')} className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+                <button type="button" onClick={() => navigate('/')} className="text-xs text-blue-600 hover:underline transition-colors">
                   ← Retour à l'accueil
                 </button>
               </div>

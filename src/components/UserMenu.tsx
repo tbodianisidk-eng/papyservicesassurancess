@@ -1,6 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,11 +62,11 @@ export const UserMenu = () => {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
+        <DropdownMenuItem onClick={() => navigate("/profile")} className="hover:bg-blue-50 hover:text-blue-600 focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
           <User className="mr-2 h-4 w-4" />
           <span>Mon profil</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
+        <DropdownMenuItem onClick={() => navigate("/profile")} className="hover:bg-blue-50 hover:text-blue-600 focus:bg-blue-50 focus:text-blue-600 cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
           <span>Paramètres</span>
         </DropdownMenuItem>

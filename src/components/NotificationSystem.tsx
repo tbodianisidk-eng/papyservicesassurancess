@@ -218,7 +218,7 @@ export const NotificationSystem = () => {
       {isOpen && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-11 w-[340px] max-w-[90vw] bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+          className="absolute right-0 top-11 w-[340px] max-w-[90vw] bg-card border border-border rounded-xl shadow-xl z-[200] overflow-hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">

@@ -5,8 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FeatureSection } from "@/components/FeatureSection";
-import { AIChatbot } from "@/components/AIChatbot";
-
 // ─── Formulaire avis clients ─────────────────────────────────────────────────
 const LABELS = ['', 'Décevant', 'Passable', 'Bien', 'Très bien', 'Excellent'];
 function FeedbackForm() {
@@ -423,10 +421,10 @@ const Index = () => {
           {/* Registration Cards */}
           <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-3xl mx-auto">
             {/* Prestataire Card */}
-            <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-purple-500">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-bl-full opacity-50"></div>
+            <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-bl-full opacity-50"></div>
               <div className="relative p-8">
-                <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
                   <Stethoscope className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-2 text-gray-900">Prestataire</h3>
@@ -445,7 +443,7 @@ const Index = () => {
                     <span>Suivi des remboursements</span>
                   </li>
                 </ul>
-                <Button onClick={() => navigate('/signup?role=prestataire')} className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button onClick={() => navigate('/signup?role=prestataire')} className="w-full bg-blue-600 hover:bg-blue-700">
                   Créer un compte prestataire
                 </Button>
               </div>
@@ -492,9 +490,9 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="bg-gray-900 text-gray-300 py-16 relative z-50 scroll-mt-20">
+      <footer id="contact" className="bg-gray-900 text-gray-300 py-8 relative z-50 scroll-mt-20">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-5 gap-12 mb-12">
+          <div className="grid md:grid-cols-5 gap-6 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <img src="/logo1.png" alt="Logo" className="w-10 h-10 object-contain flex-shrink-0" />
@@ -566,14 +564,12 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-800 pt-4 text-center text-gray-400">
             <p>&copy; 2024 Papy Services Assurances. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
 
-      {/* AI Chatbot */}
-      <AIChatbot />
     </div>
   );
 };

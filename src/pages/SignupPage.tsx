@@ -21,13 +21,11 @@ const SignupPage = () => {
   const [email, setEmail] = useState("");
   const [telephone, setTelephone] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [organization, setOrganization] = useState("");
   const [adresse, setAdresse] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [cgAccepted, setCgAccepted] = useState(false);
 
   const roles: { value: UserRole; label: string; description: string; icon: React.ReactNode }[] = [
@@ -48,10 +46,6 @@ const SignupPage = () => {
     }
     if (role === 'prestataire' && !adresse.trim()) {
       toast({ title: "Erreur", description: "La localisation est obligatoire pour les prestataires", variant: "destructive" });
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas", variant: "destructive" });
       return;
     }
     if (password.length < 8) {
@@ -215,7 +209,7 @@ const SignupPage = () => {
                   onChange={(e) => setEmail(e.target.value)} disabled={loading}
                   className="h-11 text-sm rounded-xl border-gray-200 focus:border-blue-500" />
               ) : (
-                <Input type="tel" placeholder="+221 77 000 00 00" value={telephone}
+                <Input type="tel" placeholder="+221 77 123 45 67" value={telephone}
                   onChange={(e) => setTelephone(e.target.value)} disabled={loading}
                   className="h-11 text-sm rounded-xl border-gray-200 focus:border-blue-500" />
               )}
@@ -254,22 +248,6 @@ const SignupPage = () => {
               <p className="text-xs text-gray-400">Au moins 8 caractères, une majuscule et un chiffre</p>
             </div>
 
-            {/* Confirmer mot de passe */}
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                Confirmer le mot de passe <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
-                <Input id="confirmPassword" type={showConfirm ? "text" : "password"} placeholder="••••••••"
-                  value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required
-                  className="h-11 text-sm rounded-xl border-gray-200 pr-10" />
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)} tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
             {/* CGU */}
             <div className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50">
               <input id="cgAccepted" type="checkbox" checked={cgAccepted}
@@ -306,7 +284,7 @@ const SignupPage = () => {
                 Se connecter
               </button>
             </p>
-            <button type="button" onClick={() => navigate('/')} className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+            <button type="button" onClick={() => navigate('/')} className="text-xs text-blue-600 hover:underline transition-colors">
               ← Retour à l'accueil
             </button>
           </div>
