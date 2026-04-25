@@ -37,7 +37,7 @@ export default function NewAssurePage() {
     try {
       await DataService.createAssure(formData);
       toast.success("Assuré créé avec succès !");
-      navigate('/assures');
+      navigate('/admin/assures');
     } catch (error) {
       console.error('Erreur lors de la création:', error);
       const message = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -76,7 +76,7 @@ export default function NewAssurePage() {
 
   return (
     <AppLayout title="Nouvel assuré" subHeader={
-      <Button size="sm" onClick={() => navigate('/assures')}>
+      <Button size="sm" onClick={() => navigate('/admin/assures')}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Retour
       </Button>
     }>
@@ -158,7 +158,7 @@ export default function NewAssurePage() {
                   <Button type="submit" className="flex-1 h-9 sm:h-10 text-xs sm:text-sm font-medium">
                     Créer l'assuré
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => navigate('/assures')}
+                  <Button type="button" variant="outline" onClick={() => navigate('/admin/assures')}
                     className="flex-1 sm:flex-none h-9 sm:h-10 text-xs sm:text-sm">
                     Annuler
                   </Button>

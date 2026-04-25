@@ -263,7 +263,7 @@ export default function PolicesPage() {
           ) : (
             /* Admin : création directe */
             <button
-              onClick={() => navigate("/polices/new")}
+              onClick={() => navigate("/admin/polices/new")}
               className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-lg bg-brand hover:bg-brand-dark text-white text-sm font-medium shadow-sm hover:shadow-md active:scale-95 transition-all duration-150 whitespace-nowrap shrink-0"
             >
               <Plus size={15} />

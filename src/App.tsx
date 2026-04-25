@@ -10,34 +10,34 @@ import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import Dashboard from "./pages/Dashboard";
-import RegistrationManagementPage from "./pages/RegistrationManagementPage";
-import AssuresPage from "./pages/AssuresPage";
-import AssureDetailsPage from "./pages/AssureDetailsPage";
-import NewAssurePage from "./pages/NewAssurePage";
+import RegistrationManagementPage from "./pages/admin/RegistrationManagementPage";
+import AssuresPage from "./pages/admin/AssuresPage";
+import AssureDetailsPage from "./pages/admin/AssureDetailsPage";
+import NewAssurePage from "./pages/admin/NewAssurePage";
 import PolicesPage from "./pages/PolicesPage";
-import NewPolicePage from "./pages/NewPolicePage";
+import NewPolicePage from "./pages/admin/NewPolicePage";
 import SinistresPage from "./pages/SinistresPage";
 import SinistreDetailsPage from "./pages/SinistreDetailsPage";
 import RemboursementsPage from "./pages/RemboursementsPage";
-import PrestatairesPage from "./pages/PrestatairesPage";
-import NewPrestatairePage from "./pages/NewPrestatairePage";
-import EditPrestatairePage from "./pages/EditPrestatairePage";
+import PrestatairesPage from "./pages/admin/PrestatairesPage";
+import NewPrestatairePage from "./pages/admin/NewPrestatairePage";
+import EditPrestatairePage from "./pages/admin/EditPrestatairePage";
 import CartesPage from "./pages/CartesPage";
 import ConsultationsPage from "./pages/ConsultationsPage";
 import NewConsultationPage from "./pages/NewConsultationPage";
 import PrescriptionsPage from "./pages/PrescriptionsPage";
 import NewPrescriptionPage from "./pages/NewPrescriptionPage";
 import PrescriptionDetailsPage from "./pages/PrescriptionDetailsPage";
-import MaladieGroupePage from "./pages/MaladieGroupePage";
-import NewGroupePage from "./pages/NewGroupePage";
-import MaladieFamillePage from "./pages/MaladieFamillePage";
-import NewFamillePage from "./pages/NewFamillePage";
+import MaladieGroupePage from "./pages/admin/MaladieGroupePage";
+import NewGroupePage from "./pages/admin/NewGroupePage";
+import MaladieFamillePage from "./pages/admin/MaladieFamillePage";
+import NewFamillePage from "./pages/admin/NewFamillePage";
 import AdminProfilePage from "./pages/AdminProfilePage";
-import ArchivePage from "./pages/ArchivePage";
+import ArchivePage from "./pages/admin/ArchivePage";
 import ConditionsGeneralesPage from "./pages/ConditionsGeneralesPage";
 import ContactPage from "./pages/ContactPage";
-import UsersPage from "./pages/UsersPage";
-import StatistiquesPage from "./pages/StatistiquesPage";
+import UsersPage from "./pages/admin/UsersPage";
+import StatistiquesPage from "./pages/admin/StatistiquesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,24 +66,25 @@ const App = () => (
             <Route path="/prescriptions" element={<ProtectedRoute element={<PrescriptionsPage />} />} />
             <Route path="/prescriptions/:id" element={<ProtectedRoute element={<PrescriptionDetailsPage />} />} />
 
-            {/* Routes admin uniquement */}
-            <Route path="/statistiques" element={<ProtectedRoute element={<StatistiquesPage />} requiredRoles={['admin']} />} />
-            <Route path="/users" element={<ProtectedRoute element={<UsersPage />} requiredRoles={['admin']} />} />
-            <Route path="/registrations" element={<ProtectedRoute element={<RegistrationManagementPage />} requiredRoles={['admin']} />} />
-            <Route path="/assures" element={<ProtectedRoute element={<AssuresPage />} requiredRoles={['admin']} />} />
-            <Route path="/assures/new" element={<ProtectedRoute element={<NewAssurePage />} requiredRoles={['admin']} />} />
-            <Route path="/assures/:id" element={<ProtectedRoute element={<AssureDetailsPage />} requiredRoles={['admin']} />} />
-            <Route path="/polices/new" element={<ProtectedRoute element={<NewPolicePage />} requiredRoles={['admin']} />} />
-            <Route path="/maladie-famille" element={<ProtectedRoute element={<MaladieFamillePage />} requiredRoles={['admin']} />} />
-            <Route path="/maladie-famille/new" element={<ProtectedRoute element={<NewFamillePage />} requiredRoles={['admin']} />} />
-            <Route path="/maladie-groupe" element={<ProtectedRoute element={<MaladieGroupePage />} requiredRoles={['admin']} />} />
-            <Route path="/maladie-groupe/new" element={<ProtectedRoute element={<NewGroupePage />} requiredRoles={['admin']} />} />
+            {/* Routes admin uniquement — préfixe /admin/ */}
+            <Route path="/admin" element={<ProtectedRoute element={<Dashboard />} requiredRoles={['admin']} />} />
+            <Route path="/admin/statistiques" element={<ProtectedRoute element={<StatistiquesPage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/users" element={<ProtectedRoute element={<UsersPage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/registrations" element={<ProtectedRoute element={<RegistrationManagementPage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/assures" element={<ProtectedRoute element={<AssuresPage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/assures/new" element={<ProtectedRoute element={<NewAssurePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/assures/:id" element={<ProtectedRoute element={<AssureDetailsPage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/polices/new" element={<ProtectedRoute element={<NewPolicePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/maladie-famille" element={<ProtectedRoute element={<MaladieFamillePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/maladie-famille/new" element={<ProtectedRoute element={<NewFamillePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/maladie-groupe" element={<ProtectedRoute element={<MaladieGroupePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/maladie-groupe/new" element={<ProtectedRoute element={<NewGroupePage />} requiredRoles={['admin']} />} />
             <Route path="/conditions-generales" element={<ConditionsGeneralesPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/prestataires" element={<ProtectedRoute element={<PrestatairesPage />} requiredRoles={['admin']} />} />
-            <Route path="/prestataires/new" element={<ProtectedRoute element={<NewPrestatairePage />} requiredRoles={['admin']} />} />
-            <Route path="/prestataires/:id" element={<ProtectedRoute element={<EditPrestatairePage />} requiredRoles={['admin']} />} />
-            <Route path="/archives" element={<ProtectedRoute element={<ArchivePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/prestataires" element={<ProtectedRoute element={<PrestatairesPage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/prestataires/new" element={<ProtectedRoute element={<NewPrestatairePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/prestataires/:id" element={<ProtectedRoute element={<EditPrestatairePage />} requiredRoles={['admin']} />} />
+            <Route path="/admin/archives" element={<ProtectedRoute element={<ArchivePage />} requiredRoles={['admin']} />} />
 
             {/* Routes admin + prestataire */}
             <Route path="/consultations" element={<ProtectedRoute element={<ConsultationsPage />} requiredRoles={['admin', 'prestataire']} />} />

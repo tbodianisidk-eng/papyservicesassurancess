@@ -280,7 +280,7 @@ export default function NewFamillePage() {
         await DataService.createFamille(payload);
         toast.success("Famille créée avec succès");
       }
-      navigate("/maladie-famille");
+      navigate("/admin/maladie-famille");
     } catch (err: any) {
       toast.error(err?.message || "Erreur lors de l'enregistrement");
     }
@@ -290,7 +290,7 @@ export default function NewFamillePage() {
 
   return (
     <AppLayout subHeader={
-      <Button size="sm" onClick={() => navigate("/maladie-famille")}>
+      <Button size="sm" onClick={() => navigate("/admin/maladie-famille")}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Retour
       </Button>
     }>

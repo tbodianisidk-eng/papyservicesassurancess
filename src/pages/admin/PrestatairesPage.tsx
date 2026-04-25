@@ -100,7 +100,7 @@ export default function PrestatairesPage() {
             </div>
           </div>
           <button
-            onClick={() => navigate("/prestataires/new")}
+            onClick={() => navigate("/admin/prestataires/new")}
             className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-lg bg-brand hover:bg-brand-dark text-white text-sm font-medium shadow-sm hover:shadow-md active:scale-95 transition-all duration-150 whitespace-nowrap shrink-0"
           >
             <Plus size={15} />
@@ -224,7 +224,7 @@ export default function PrestatairesPage() {
                 {/* Actions */}
                 <div className="flex gap-2 mt-4 pt-3 border-t border-border">
                   <button
-                    onClick={() => navigate(`/prestataires/${prest.id}`)}
+                    onClick={() => navigate(`/admin/prestataires/${prest.id}`)}
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card hover:bg-muted transition-colors"
                   >
                     <Pencil size={12} />

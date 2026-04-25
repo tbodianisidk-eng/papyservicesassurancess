@@ -42,7 +42,7 @@ export default function NewPrestatairePage() {
     try {
       await DataService.createPrestataire(formData);
       toast({ title: "Prestataire créé", description: `${formData.nom} a été enregistré avec succès.` });
-      navigate('/prestataires');
+      navigate('/admin/prestataires');
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -59,7 +59,7 @@ export default function NewPrestatairePage() {
 
   return (
     <AppLayout title="Nouveau prestataire" subHeader={
-      <Button variant="outline" size="sm" onClick={() => navigate('/prestataires')}>
+      <Button variant="outline" size="sm" onClick={() => navigate('/admin/prestataires')}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Retour
       </Button>
     }>
@@ -115,7 +115,7 @@ export default function NewPrestatairePage() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/prestataires')}>
+                <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/admin/prestataires')}>
                   Annuler
                 </Button>
                 <Button type="submit" className="flex-1" disabled={loading}>

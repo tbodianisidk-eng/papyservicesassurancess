@@ -112,14 +112,14 @@ export default function AppLayout({ children, title, subHeader }: AppLayoutProps
               type:     "Assuré" as const,
               label:    [a.prenom, a.nom].filter(Boolean).join(' ') || '—',
               subtitle: a.numero ?? '',
-              path:     `/assures/${a.id}`,
+              path:     `/admin/assures/${a.id}`,
               icon:     <User size={16} />,
             })),
             ...(_cachedPrestataires ?? []).map((p: any) => ({
               type:     "Prestataire" as const,
               label:    p.nom ?? '—',
               subtitle: p.specialite ?? '',
-              path:     '/prestataires',
+              path:     '/admin/prestataires',
               icon:     <Stethoscope size={16} />,
             })),
           ];

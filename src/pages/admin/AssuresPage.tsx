@@ -180,7 +180,7 @@ export default function AssuresPage() {
             </button>
           </div>
           <button
-            onClick={() => navigate('/assures/new')}
+            onClick={() => navigate('/admin/assures/new')}
             className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-brand hover:bg-brand-dark text-white text-sm font-medium shadow-sm transition-all whitespace-nowrap"
           >
             <Plus size={14} /> Nouvel assuré
@@ -279,7 +279,7 @@ export default function AssuresPage() {
                       className={`border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer ${
                         (a.lien || "").toLowerCase() === "principal" ? "bg-blue-50/30" : ""
                       }`}
-                      onClick={() => navigate(`/assures/${a.id}`)}
+                      onClick={() => navigate(`/admin/assures/${a.id}`)}
                     >
                       {/* N° */}
                       <td className="py-2.5 px-3 font-mono text-[11px] text-muted-foreground">{i + 1}</td>
@@ -351,7 +351,7 @@ export default function AssuresPage() {
                       {/* Action */}
                       <td className="py-2.5 px-3 text-right">
                         <button
-                          onClick={e => { e.stopPropagation(); navigate(`/assures/${a.id}`); }}
+                          onClick={e => { e.stopPropagation(); navigate(`/admin/assures/${a.id}`); }}
                           className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                         >
                           <Eye size={13} />
@@ -371,7 +371,7 @@ export default function AssuresPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  onClick={() => navigate(`/assures/${a.id}`)}
+                  onClick={() => navigate(`/admin/assures/${a.id}`)}
                   className="p-3 rounded-lg border hover:bg-muted/40 transition-colors cursor-pointer space-y-2 bg-card"
                 >
                   <div className="flex items-start justify-between gap-2">

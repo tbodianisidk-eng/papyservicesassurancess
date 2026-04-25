@@ -47,7 +47,7 @@ export default function EditPrestatairePage() {
         const found = list.find((p: any) => String(p.id) === String(id));
         if (!found) {
           toast({ title: "Introuvable", description: "Prestataire non trouvé.", variant: "destructive" });
-          navigate('/prestataires');
+          navigate('/admin/prestataires');
           return;
         }
         setFormData({
@@ -62,7 +62,7 @@ export default function EditPrestatairePage() {
       })
       .catch(() => {
         toast({ title: "Erreur", description: "Impossible de charger les données.", variant: "destructive" });
-        navigate('/prestataires');
+        navigate('/admin/prestataires');
       })
       .finally(() => setLoadingData(false));
   }, [id]);
@@ -82,7 +82,7 @@ export default function EditPrestatairePage() {
     try {
       await DataService.updatePrestataire(id!, formData);
       toast({ title: "Modifications enregistrées", description: `${formData.nom} a été mis à jour.` });
-      navigate('/prestataires');
+      navigate('/admin/prestataires');
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour.", variant: "destructive" });
     } finally {
@@ -106,7 +106,7 @@ export default function EditPrestatairePage() {
 
   return (
     <AppLayout title="Modifier le prestataire" subHeader={
-      <Button variant="outline" size="sm" onClick={() => navigate('/prestataires')}>
+      <Button variant="outline" size="sm" onClick={() => navigate('/admin/prestataires')}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Retour
       </Button>
     }>
@@ -190,7 +190,7 @@ export default function EditPrestatairePage() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/prestataires')}>
+                <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/admin/prestataires')}>
                   Annuler
                 </Button>
                 <Button type="submit" className="flex-1" disabled={saving}>

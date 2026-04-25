@@ -799,7 +799,7 @@ export default function NewGroupePage() {
         nbErreurs:  validationErrors.length,
         duree:      formData.dureeGarantie,
       });
-      navigate("/maladie-groupe");
+      navigate("/admin/maladie-groupe");
     } catch (err: any) {
       toast.error(err?.message || "Erreur lors de l'enregistrement");
     } finally {
@@ -1098,7 +1098,7 @@ export default function NewGroupePage() {
     <AppLayout subHeader={
       <div className="flex items-center justify-between flex-wrap gap-2">
         <Button size="sm"
-          onClick={() => step === "apercu" ? resetToForm() : navigate("/maladie-groupe")}>
+          onClick={() => step === "apercu" ? resetToForm() : navigate("/admin/maladie-groupe")}>
           <ArrowLeft className="w-4 h-4 mr-1.5" />
           {step === "apercu" ? "Retour au formulaire" : "Retour à la liste"}
         </Button>

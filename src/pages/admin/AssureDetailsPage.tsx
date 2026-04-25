@@ -72,7 +72,7 @@ export default function AssureDetailsPage() {
     try {
       await DataService.deleteAssure(String(assure.id));
       toast.success("Assuré supprimé.");
-      navigate("/assures");
+      navigate("/admin/assures");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
       toast.error("Erreur lors de la suppression : " + msg);
@@ -89,7 +89,7 @@ export default function AssureDetailsPage() {
 
   if (error || !assure) return (
     <AppLayout title="Assuré introuvable" subHeader={
-      <Button size="sm" onClick={() => navigate("/assures")}>
+      <Button size="sm" onClick={() => navigate("/admin/assures")}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Retour à la liste
       </Button>
     }>
@@ -124,7 +124,7 @@ export default function AssureDetailsPage() {
 
   return (
     <AppLayout title={`${assure.prenom} ${assure.nom}`} subHeader={
-      <Button size="sm" onClick={() => navigate("/assures")}>
+      <Button size="sm" onClick={() => navigate("/admin/assures")}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Retour
       </Button>
     }>
