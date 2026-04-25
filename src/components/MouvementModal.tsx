@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { getTarifs } from "@/services/tarifService";
-import { typeFromDate, TYPE_LABELS, TYPE_COLORS, type TypeAssure } from "@/pages/NewFamillePage";
+import { typeFromDate, TYPE_LABELS, TYPE_COLORS, type TypeAssure } from "@/pages/admin/NewFamillePage";
 import { DataService } from "@/services/dataService";
 import { toast } from "sonner";
 
