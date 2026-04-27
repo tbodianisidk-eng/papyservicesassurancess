@@ -139,16 +139,31 @@ export default function VerifyPage() {
             <p className="font-mono font-bold text-gray-900 text-base">{data.numero}</p>
           </div>
 
-          {/* Titulaire */}
+          {/* Titulaire + Photo anti-fraude */}
           <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-              style={{ background: BRAND }}>
-              {(data.nom?.[0] ?? "?").toUpperCase()}
+            <div className="relative shrink-0">
+              {data.photo ? (
+                <div className="rounded-lg overflow-hidden" style={{ width: 56, height: 72 }}>
+                  <img src={data.photo} alt="photo" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-black text-lg shrink-0"
+                  style={{ background: BRAND }}>
+                  {(data.nom?.[0] ?? "?").toUpperCase()}
+                </div>
+              )}
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[7px] font-black text-white px-1 py-0.5 rounded-sm whitespace-nowrap"
+                style={{ background: BRAND }}>
+                ASSURÉ
+              </span>
             </div>
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wider">Titulaire</p>
               <p className="font-bold text-gray-900">{data.nom} {data.prenom}</p>
               <p className="text-xs text-gray-500">Type : {data.type}</p>
+              {data.photo && (
+                <p className="text-[10px] text-green-600 font-medium mt-0.5">✓ Identité vérifiable visuellement</p>
+              )}
             </div>
           </div>
 

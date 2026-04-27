@@ -67,6 +67,9 @@ public class Assure {
     private String salaire;
     private String garantie;
 
+    @Column(columnDefinition = "TEXT")
+    private String photo;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

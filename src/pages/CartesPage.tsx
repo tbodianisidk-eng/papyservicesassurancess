@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Search, Download, QrCode, Loader2, ServerCrash, Users } from "@/components/ui/Icons";
+import { Search, Download, QrCode, Loader2, ServerCrash, Users, Camera } from "@/components/ui/Icons";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { DataService } from "@/services/dataService";
 import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/services/apiClient";
+import { useToast } from "@/hooks/use-toast";
 
 const BRAND = "#1B5299";
 const GOLD  = "#D4A017";
@@ -20,22 +22,87 @@ function fmt(d?: string | null) {
   try { return new Date(d).toLocaleDateString("fr-FR"); } catch { return "—"; }
 }
 
-// ─── Photo placeholder ────────────────────────────────────────────────────────
-function PhotoBox({ src }: { src?: string }) {
+// ─── Photo avec badge + initiales fallback ────────────────────────────────────
+function PhotoBox({ src, nom, prenom }: { src?: string; nom?: string; prenom?: string }) {
+  const initials = [nom?.[0], prenom?.[0]].filter(Boolean).join("").toUpperCase() || "?";
   return (
-    <div
-      className="rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center shrink-0"
-      style={{ width: 72, height: 96, border: `2px solid ${BRAND}40` }}
-    >
-      {src
-        ? <img src={src} alt="photo" className="w-full h-full object-cover" />
-        : (
-          <svg viewBox="0 0 24 24" fill="#CBD5E1" width="36" height="36">
-            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-          </svg>
-        )
-      }
+    <div className="relative shrink-0" style={{ width: 80, height: 104 }}>
+      {/* Cadre photo */}
+      <div className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center"
+        style={{ border: `2px solid ${BRAND}60`, background: src ? "transparent" : `${BRAND}10` }}>
+        {src
+          ? <img src={src} alt="photo assuré" className="w-full h-full object-cover" />
+          : (
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-black text-xl" style={{ color: BRAND }}>{initials}</span>
+              <svg viewBox="0 0 24 24" fill={`${BRAND}40`} width="22" height="22">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
+          )
+        }
+      </div>
+      {/* Badge ASSURÉ */}
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+        <span className="text-[7px] font-black text-white px-1.5 py-0.5 rounded-sm"
+          style={{ background: BRAND, letterSpacing: "0.05em" }}>
+          ASSURÉ
+        </span>
+      </div>
     </div>
+  );
+}
+
+// ─── Bouton upload photo (admin) ──────────────────────────────────────────────
+function PhotoUpload({ assureId, onUploaded }: { assureId: number; onUploaded: (url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2_000_000) {
+      toast({ title: "Fichier trop volumineux", description: "Max 2 Mo.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setUploading(true);
+      try {
+        await apiClient.request(`/assures/${assureId}/photo`, {
+          method: "PATCH",
+          body: JSON.stringify({ photo: dataUrl }),
+        });
+        onUploaded(dataUrl);
+        toast({ title: "Photo mise à jour" });
+      } catch {
+        toast({ title: "Erreur upload", variant: "destructive" });
+      } finally {
+        setUploading(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <button
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border transition-colors"
+        style={{ borderColor: `${BRAND}40`, color: BRAND }}
+        title="Changer la photo"
+      >
+        {uploading
+          ? <Loader2 size={10} className="animate-spin" />
+          : <Camera size={10} />}
+        {uploading ? "Upload…" : "Photo"}
+      </button>
+    </>
   );
 }
 
@@ -52,7 +119,7 @@ function Row({ label, value, green }: { label: string; value: string; green?: bo
 }
 
 // ─── Carte ────────────────────────────────────────────────────────────────────
-function InsuranceCard({ a }: { a: any }) {
+function InsuranceCard({ a, onPhotoUpdate, isAdmin }: { a: any; onPhotoUpdate?: (url: string) => void; isAdmin?: boolean }) {
   const type = String(a.type ?? "").toUpperCase();
   const isGroupe  = type === "GROUPE";
   const isFamille = type === "FAMILLE";
@@ -146,7 +213,10 @@ function InsuranceCard({ a }: { a: any }) {
 
         {/* Droite : photo + QR */}
         <div className="flex flex-col items-center gap-2 shrink-0">
-          <PhotoBox src={a.photo} />
+          <PhotoBox src={a.photo} nom={a.nom} prenom={a.prenom} />
+          {isAdmin && onPhotoUpdate && (
+            <PhotoUpload assureId={a.id} onUploaded={onPhotoUpdate} />
+          )}
           <div className="flex flex-col items-center gap-0.5">
             <div className="rounded border border-gray-200 bg-white p-0.5"
               style={{ width: 72 }}>
@@ -396,7 +466,13 @@ export default function CartesPage() {
               transition={{ delay: i * 0.07 }}
               className="space-y-2"
             >
-              <InsuranceCard a={a} />
+              <InsuranceCard
+                a={a}
+                isAdmin={!isClient}
+                onPhotoUpdate={(url) => {
+                  setAssures(prev => prev.map(x => x.id === a.id ? { ...x, photo: url } : x));
+                }}
+              />
 
               <div className="flex items-center gap-2 px-1">
                 {Array.isArray(a.beneficiaires) && a.beneficiaires.length > 0 && (

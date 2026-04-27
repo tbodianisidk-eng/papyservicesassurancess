@@ -50,17 +50,19 @@ public class PublicVerifyController {
         String nomMasque = maskName(a.getNom());
         String prenomMasque = maskName(a.getPrenom());
 
-        return ResponseEntity.ok(Map.of(
-            "found",     true,
-            "numero",    a.getNumero(),
-            "nom",       nomMasque,
-            "prenom",    prenomMasque,
-            "statut",    statutEffectif,
-            "actif",     "ACTIF".equals(statutEffectif),
-            "dateFin",   a.getDateFin() != null ? a.getDateFin() : "31/12/2026",
-            "garantie",  a.getGarantie() != null ? a.getGarantie() : "Standard",
-            "type",      a.getType() != null ? a.getType().name() : "FAMILLE"
-        ));
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("found",    true);
+        result.put("numero",   a.getNumero());
+        result.put("nom",      nomMasque);
+        result.put("prenom",   prenomMasque);
+        result.put("statut",   statutEffectif);
+        result.put("actif",    "ACTIF".equals(statutEffectif));
+        result.put("dateFin",  a.getDateFin() != null ? a.getDateFin() : "31/12/2026");
+        result.put("garantie", a.getGarantie() != null ? a.getGarantie() : "Standard");
+        result.put("type",     a.getType() != null ? a.getType().name() : "FAMILLE");
+        // La photo est incluse dans la vérification pour l'anti-fraude visuelle
+        result.put("photo",    a.getPhoto() != null ? a.getPhoto() : "");
+        return ResponseEntity.ok(result);
     }
 
     private String maskName(String name) {

@@ -96,6 +96,13 @@ public class AssureService {
         return AssureDto.fromEntity(assure);
     }
 
+    public AssureDto updatePhoto(Long id, String photoDataUrl) {
+        Assure assure = assureRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Assure not found with id: " + id));
+        assure.setPhoto(photoDataUrl);
+        return AssureDto.fromEntity(assureRepository.save(assure));
+    }
+
     private Assure.AssureStatut parseStatut(String val) {
         if (val == null) return Assure.AssureStatut.ACTIF;
         try { return Assure.AssureStatut.valueOf(val.toUpperCase()); }

@@ -33,6 +33,7 @@ public class AssureDto {
     private String dateAdhesion;
     private String salaire;
     private String garantie;
+    private String photo;
 
     public static AssureDto fromEntity(Assure a) {
         return AssureDto.builder()
@@ -59,6 +60,7 @@ public class AssureDto {
             .dateAdhesion(a.getDateAdhesion())
             .salaire(a.getSalaire())
             .garantie(a.getGarantie())
+            .photo(a.getPhoto())
             .build();
     }
 }
