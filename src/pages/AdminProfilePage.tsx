@@ -7,26 +7,22 @@ import { Card } from "@/components/ui/card";
 import { User, Mail, Phone, MapPin, Lock, Settings } from "@/components/ui/Icons";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/services/apiClient";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { getTarifs, saveTarifs, TARIF_DEFAULTS, type TarifSettings } from "@/services/tarifService";
-
-const PROFILE_KEY = (id: string) => `user_profile_${id}`;
 
 export default function AdminProfilePage() {
   const { user, updatePhoto } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState(() => {
-    const saved = user?.id ? localStorage.getItem(PROFILE_KEY(user.id)) : null;
-    if (saved) return JSON.parse(saved);
-    return {
-      nom:       user?.full_name?.split(' ').slice(1).join(' ') || "Utilisateur",
-      prenom:    user?.full_name?.split(' ')[0] || "",
-      email:     user?.email || "",
-      telephone: "+221 77 527 97 27",
-      adresse:   "Rufisque Ouest, Cité Poste, Lot N°67",
-      role:      user?.role === 'admin' ? 'Administrateur' : user?.role === 'prestataire' ? 'Prestataire' : 'Client',
-    };
+  const [formData, setFormData] = useState({
+    nom:       user?.full_name?.split(' ').slice(1).join(' ') || "",
+    prenom:    user?.full_name?.split(' ')[0] || "",
+    email:     user?.email || "",
+    telephone: user?.telephone || "",
+    adresse:   user?.adresse || "",
+    role:      user?.role === 'admin' ? 'Administrateur' : user?.role === 'prestataire' ? 'Prestataire' : 'Client',
   });
 
   const initials = (user?.full_name || user?.email || 'U')
@@ -43,12 +39,25 @@ export default function AdminProfilePage() {
     confirm: ""
   });
 
-  const handleSave = () => {
-    if (user?.id) {
-      localStorage.setItem(PROFILE_KEY(user.id), JSON.stringify(formData));
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      await apiClient.request(`/users/${user.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          fullName:  `${formData.prenom} ${formData.nom}`.trim(),
+          telephone: formData.telephone,
+          adresse:   formData.adresse,
+        }),
+      });
+      toast.success("Profil mis à jour avec succès");
+      setIsEditing(false);
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la mise à jour");
+    } finally {
+      setSaving(false);
     }
-    toast.success("Profil mis à jour avec succès");
-    setIsEditing(false);
   };
 
   const [tarifs, setTarifs] = useState<TarifSettings>(() => getTarifs());
@@ -83,7 +92,9 @@ export default function AdminProfilePage() {
     toast.success("Tarifs réinitialisés aux valeurs par défaut");
   };
 
-  const handlePasswordChange = () => {
+  const [changingPwd, setChangingPwd] = useState(false);
+
+  const handlePasswordChange = async () => {
     if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
       toast.error("Veuillez remplir tous les champs");
       return;
@@ -96,8 +107,22 @@ export default function AdminProfilePage() {
       toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
-    toast.success("Mot de passe changé avec succès");
-    setPasswordData({ current: "", new: "", confirm: "" });
+    setChangingPwd(true);
+    try {
+      await apiClient.request(`/users/${user?.id}/change-password`, {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: passwordData.current,
+          newPassword:     passwordData.new,
+        }),
+      });
+      toast.success("Mot de passe changé avec succès");
+      setPasswordData({ current: "", new: "", confirm: "" });
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors du changement de mot de passe");
+    } finally {
+      setChangingPwd(false);
+    }
   };
 
   return (
@@ -119,11 +144,17 @@ export default function AdminProfilePage() {
               <p className="text-muted-foreground">{formData.role}</p>
               <p className="text-sm text-muted-foreground mt-1">{formData.email}</p>
             </div>
+            {isEditing && (
+              <Button variant="outline" onClick={() => setIsEditing(false)} className="mr-2">
+                Annuler
+              </Button>
+            )}
             <Button
               onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+              disabled={saving}
               className="btn-ripple"
             >
-              {isEditing ? "Enregistrer" : "Modifier"}
+              {saving ? "Enregistrement…" : isEditing ? "Enregistrer" : "Modifier"}
             </Button>
           </div>
 
@@ -225,11 +256,12 @@ export default function AdminProfilePage() {
                 onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
               />
             </div>
-            <Button 
+            <Button
               onClick={handlePasswordChange}
+              disabled={changingPwd}
               className="btn-ripple"
             >
-              Changer le mot de passe
+              {changingPwd ? "Modification…" : "Changer le mot de passe"}
             </Button>
           </div>
         </Card>

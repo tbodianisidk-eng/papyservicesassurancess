@@ -29,9 +29,31 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserDto>> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
+    public ResponseEntity<ApiResponse<UserDto>> updateUser(
+            @PathVariable Long id,
+            @RequestBody UserDto userDto) {
         UserDto updatedUser = userService.updateUser(id, userDto);
         return ResponseEntity.ok(ApiResponse.success(updatedUser));
+    }
+
+    @PostMapping("/{id}/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        String currentPassword = body.get("currentPassword");
+        String newPassword     = body.get("newPassword");
+        if (currentPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Champs manquants"));
+        }
+        if (newPassword.length() < 6) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mot de passe trop court (min 6 caractères)"));
+        }
+        try {
+            userService.changePassword(id, currentPassword, newPassword);
+            return ResponseEntity.ok(ApiResponse.success("Mot de passe mis à jour"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
